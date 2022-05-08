@@ -19,6 +19,9 @@ namespace WildsCoop.Network
 
         public static async Task<bool> ConnectAsync(ServerConnectionInformation connectionInformation)
         {
+            if (_webSocket != null && _webSocket.IsRunning)
+                return true;
+
             _webSocket = new WebsocketClient(connectionInformation.WebSocketUri);
 
             try
@@ -30,8 +33,27 @@ namespace WildsCoop.Network
             }
             catch (Exception ex)
             {
-                Log($"ConnectAsync: Websocket error for {connectionInformation.WebSocketUri} ({ex.GetType().FullName})");
+                Log($"ConnectAsync: Websocket error for {connectionInformation.WebSocketUri} ({ex.Message})");
                 return false;
+            }
+
+            _webSocket.MessageReceived.Subscribe((e) =>
+            {
+                Log($"WebPacket received : {e.MessageType} {(e.MessageType == System.Net.WebSockets.WebSocketMessageType.Text ? e.Text : e.Binary.Length.ToString())}");
+            });
+
+            await Task.Factory.StartNew(async () =>
+            {
+                while (true)
+                {
+                    _webSocket.Send("Hello World");
+                    await Task.Delay(5 * 1000);
+                }
+            }).ConfigureAwait(false);
+
+            if (_webSocket.IsRunning)
+            {
+                _webSocket.Send("Hello World");
             }
 
             return _webSocket.IsRunning;
