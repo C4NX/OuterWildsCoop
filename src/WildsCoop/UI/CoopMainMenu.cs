@@ -26,6 +26,8 @@ namespace WildsCoop.UI
         private string _password = string.Empty;
         private string _port = "5050";
 
+        private bool _isConnecting = false;
+
         private string _error_message;
 
         public void OnGUI()
@@ -42,11 +44,37 @@ namespace WildsCoop.UI
                        GUI.Label(new Rect(5, 100, 490, 20), "Password :");
                        _password = GUI.TextField(new Rect(5, 120, 490, 20), _password);
 
-                       if(GUI.Button(new Rect(5, 245, 495, 50), "Join"))
+                       if(GUI.Button(new Rect(5, 245, 495, 50), _isConnecting ? "Cancel Join" : "Join"))
                        {
-                           var connectionInformation = GetServerConnectionInformation(true);
-                           if(connectionInformation != null)
-                               SetShowErrorMessage($"WIP: from {connectionInformation.IP}:{connectionInformation.Port} with password '{connectionInformation.Password ?? "<null>"}'");
+                           if (!_isConnecting)
+                           {
+                               var connectionInformation = GetServerConnectionInformation(true);
+
+
+
+                               if (connectionInformation != null)
+                               {
+                                   Task.Factory.StartNew(async () =>
+                                   {
+                                       _isConnecting = true;
+                                       if (await CoopClient.ConnectAsync(connectionInformation))
+                                       {
+                                           SetShowErrorMessage($"WIP: host from {connectionInformation.WebSocketUri} with password '{connectionInformation.Password ?? "<null>"}'");
+                                           _isConnecting = false;
+                                           HostJoinVisible = false;
+                                       }
+                                       else
+                                       {
+                                           SetShowErrorMessage($"Connection failed");
+                                           _isConnecting = false;
+                                       }
+                                   });
+                               }
+                           }
+                           else
+                           {
+                               CoopClient.CancelConnect();
+                           }
                        }
                    }, "Join Game");
 
@@ -63,7 +91,10 @@ namespace WildsCoop.UI
                     {
                         var connectionInformation = GetServerConnectionInformation(true);
                         if (connectionInformation != null)
-                            SetShowErrorMessage($"WIP: host from {connectionInformation.IP}:{connectionInformation.Port} with password '{connectionInformation.Password ?? "<null>"}'");
+                        {
+                            SetShowErrorMessage($"WIP: host from {connectionInformation.WebSocketUri} with password '{connectionInformation.Password ?? "<null>"}'");
+                        }
+
                     }
                 }, "Host Game");
             }
@@ -91,13 +122,51 @@ namespace WildsCoop.UI
             _error_message = message;
         }
 
+        private bool TryParseIpFTW(string value, out IPAddress ipAddress)
+        {
+            if(value.Trim().Equals("localhost", StringComparison.InvariantCultureIgnoreCase))
+            {
+                ipAddress = IPAddress.Parse("127.0.0.1");
+                return true;
+            }
+            return IPAddress.TryParse(_ip, out ipAddress);
+        }
+
         public ServerConnectionInformation GetServerConnectionInformation(bool showError = true)
         {
-            IPAddress ip = null;
-            int port = 0;
+            Uri webSocketUri = null;
             string password = string.IsNullOrWhiteSpace(_password) ? null : _password;
 
-            if (!IPAddress.TryParse(_ip, out ip))
+            IPAddress ipAddress = null;
+            int port = 0;
+            if (TryParseIpFTW(_ip, out ipAddress)) // may an IP (with localhost check) ?
+            {
+                if (!int.TryParse(_port, out port))
+                {
+                    if (showError)
+                        SetShowErrorMessage("You must enter a valid port number !");
+                    return null;
+                }
+
+                webSocketUri = new Uri($"ws{(false/*TODO: Add checkbox for secure*/ ? "s" : string.Empty)}://{ipAddress}:{port}/ws");
+                MelonDebug.Msg($"Created server connection uri '{webSocketUri}'");
+            }
+            else // may a full websocket uri ?
+            {
+                if (_ip.StartsWith("ws://", StringComparison.InvariantCultureIgnoreCase) || _ip.StartsWith("wss://", StringComparison.InvariantCultureIgnoreCase))
+                {
+                    webSocketUri = new Uri(_ip);
+                    MelonDebug.Msg($"Used full server connection uri '{webSocketUri}'");
+                }
+                else
+                {
+                    if (showError)
+                        SetShowErrorMessage("You must enter a valid IP or a valid websocket uri");
+                    return null;
+                }
+            }
+
+            /*if (!IPAddress.TryParse(_ip, out ip))
             {
                 try
                 {
@@ -125,9 +194,9 @@ namespace WildsCoop.UI
                 if (showError)
                     SetShowErrorMessage("You must enter a valid port number !");
                 return null;
-            }
+            }*/
 
-            return new ServerConnectionInformation(ip, port, password);
+            return new ServerConnectionInformation(webSocketUri, password);
         }
     }
 }

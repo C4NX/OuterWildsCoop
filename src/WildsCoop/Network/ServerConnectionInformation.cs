@@ -10,19 +10,17 @@ namespace WildsCoop.Network
     public class ServerConnectionInformation
     {
         public string Password { get; private set; }
-        public int Port { get; private set; }
-        public IPAddress IP { get; private set; }
+        public Uri WebSocketUri { get; private set; }
 
         public bool HasPassword => Password != null;
 
-        public ServerConnectionInformation(IPAddress address, int port, string password)
+        public ServerConnectionInformation(Uri webSocketUri, string password)
         {
-            if(address == null)
-                throw new ArgumentNullException("address");
+            if(webSocketUri == null)
+                throw new ArgumentNullException("webSocketUri");
 
-            IP = address;
+            WebSocketUri = webSocketUri;
             Password = password;
-            Port = port;
         }
     }
 }
