@@ -52,7 +52,7 @@ namespace WildsCoop
             var result = owClient.ConnectTo("127.0.0.1", timeoutMillisecond: 5000);
             if (!result)
                 MelonDebug.Msg("Failed to connect to 127.0.0.1");
-            owClient.SendMotdRequest(true);
+            owClient.RequestServerInformation(true);
 
             base.OnApplicationStart();
         }

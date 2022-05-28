@@ -11,6 +11,9 @@ using WildsCoop.Network.Packets.Server;
 
 namespace WildsCoop.Network
 {
+    /// <summary>
+    /// A class that represents an OuterWilds server.
+    /// </summary>
     public class OuterWildsServer : IDisposable
     {
         public const string LIDGREN_APP_IDENTIFIER = "OUTERWILDS";
@@ -21,6 +24,9 @@ namespace WildsCoop.Network
         private NetPacketsProvider _packetProvider;
         private ServerConfiguration _configuration;
 
+        /// <summary>
+        /// Get if the server is running, more exactly its socket.
+        /// </summary>
         public bool IsRunning => _server != null && _server.Status == NetPeerStatus.Running;
 
         private OuterWildsServer(ServerConfiguration configuration)
@@ -34,6 +40,9 @@ namespace WildsCoop.Network
                 .AddPacket<ServerInformationPacket>(101);
         }
 
+        /// <summary>
+        /// Start the server if it is not already running, and start a <see cref="ThreadPool"/> to read messages.
+        /// </summary>
         public void Start()
         {
             if (IsRunning)
@@ -42,11 +51,19 @@ namespace WildsCoop.Network
             ThreadPool.QueueUserWorkItem(OnMessageThreadItem, this);
         }
 
+        /// <summary>
+        /// Create an outer wilds server with a specific configuration.
+        /// </summary>
+        /// <param name="serverConfiguration">The <see cref="ServerConfiguration"/> to be used</param>
+        /// <returns></returns>
         public static OuterWildsServer CreateServer(ServerConfiguration serverConfiguration)
         {
             return new OuterWildsServer(serverConfiguration);
         }
 
+        /// <summary>
+        /// Closes all communication, free the socket.
+        /// </summary>
         public void Dispose()
         {
             _server.Socket.Shutdown(System.Net.Sockets.SocketShutdown.Both);
@@ -54,9 +71,13 @@ namespace WildsCoop.Network
             _server = null;
         }
 
+        /// <summary>
+        /// Transform the received data into a readable message with <see cref="NetPacketsProvider"/>, and execute the action associated to this message.
+        /// </summary>
+        /// <param name="netIncomingMessage">Data</param>
         internal void PushDataMessage(NetIncomingMessage netIncomingMessage)
         {
-            ServerLog($"Data received {netIncomingMessage.LengthBytes}B from {netIncomingMessage.SenderEndPoint}");
+            ServerLog($"Received {netIncomingMessage.LengthBytes}B from {netIncomingMessage.SenderEndPoint}");
 
             uint packetId = 0;
             var packetReceived = _packetProvider.Serialize(netIncomingMessage, out packetId);
@@ -65,7 +86,10 @@ namespace WildsCoop.Network
             {
                 if (packetReceived is ServerInformationRequestPacket)
                 {
-                    ReplyWith(netIncomingMessage.SenderConnection, new ServerInformationPacket() { IsDisconnectRequest = ((ServerInformationRequestPacket)packetReceived).WantToDisconnectAfter, MOTD = _configuration.MOTD });
+                    ServerRespond(netIncomingMessage.SenderConnection, new ServerInformationPacket() { 
+                        IsDisconnectRequest = ((ServerInformationRequestPacket)packetReceived).WantToDisconnectAfter, 
+                        MOTD = _configuration.MOTD, GameVersion=UnityEngine.Application.version 
+                    });
                 }
 
                 ServerLog($"Packet is {packetReceived.GetType().FullName} ({packetId})");
@@ -76,19 +100,38 @@ namespace WildsCoop.Network
             }
         }
 
+        /// <summary>
+        /// Execute the action associated to this new state.
+        /// </summary>
+        /// <param name="netIncomingMessage">Data</param>
         internal void PushStateMessage(NetIncomingMessage netIncomingMessage)
         {
             ServerLog($"State of {netIncomingMessage.SenderEndPoint} changed to {netIncomingMessage.SenderConnection?.Status}");
         }
 
-        public bool ReplyWith(NetConnection netConnection, INetPacket netPacket)
+        /// <summary>
+        /// Responds to a <see cref="NetConnection"/> with a <see cref="INetPacket"/>.
+        /// </summary>
+        /// <param name="netConnection">The <see cref="NetConnection"/></param>
+        /// <param name="netPacket">The <see cref="INetPacket"/></param>
+        /// <exception cref="ArgumentException">If this packet is not registered in the <see cref="NetPacketsProvider"/></exception>
+        /// <returns>If the message was <see cref="NetSendResult.Sent"/> or <see cref="NetSendResult.Queued"/></returns>
+        public bool ServerRespond(NetConnection netConnection, INetPacket netPacket)
         {
             var sendResult = netConnection.SendMessage(_packetProvider.Deserialize(netPacket), NetDeliveryMethod.ReliableOrdered, 0);
             return sendResult == NetSendResult.Sent || sendResult == NetSendResult.Queued;
         }
 
+        /// <summary>
+        /// Get the current <see cref="NetServer"/> used.
+        /// </summary>
+        /// <returns></returns>
         public NetServer GetLidgrenServer() => _server;
 
+        /// <summary>
+        /// Method that is executed on the <see cref="ThreadPool"/>, and which serves as a message reading loop for the server.
+        /// </summary>
+        /// <param name="sender">The <see cref="OuterWildsServer"/> instance to use</param>
         private static void OnMessageThreadItem(object sender)
         {
             OuterWildsServer server = (OuterWildsServer)sender;
