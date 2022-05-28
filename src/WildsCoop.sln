@@ -5,6 +5,8 @@ VisualStudioVersion = 17.0.32126.317
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WildsCoop", "WildsCoop\WildsCoop.csproj", "{797F73EF-52D0-4E5D-B253-AEE7BA1A0709}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WildsCoop.Test", "WildsCoop.Test\WildsCoop.Test.csproj", "{0B7B1C91-774F-4814-959B-CC7FCD71ACC0}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +17,10 @@ Global
 		{797F73EF-52D0-4E5D-B253-AEE7BA1A0709}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{797F73EF-52D0-4E5D-B253-AEE7BA1A0709}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{797F73EF-52D0-4E5D-B253-AEE7BA1A0709}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0B7B1C91-774F-4814-959B-CC7FCD71ACC0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0B7B1C91-774F-4814-959B-CC7FCD71ACC0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0B7B1C91-774F-4814-959B-CC7FCD71ACC0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0B7B1C91-774F-4814-959B-CC7FCD71ACC0}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

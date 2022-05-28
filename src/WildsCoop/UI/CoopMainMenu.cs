@@ -57,7 +57,7 @@ namespace WildsCoop.UI
                                    Task.Factory.StartNew(async () =>
                                    {
                                        _isConnecting = true;
-                                       if (await CoopClient.ConnectAsync(connectionInformation))
+                                       /*if (await CoopClient.ConnectAsync(connectionInformation))
                                        {
                                            SetShowErrorMessage($"WIP: host from {connectionInformation.WebSocketUri} with password '{connectionInformation.Password ?? "<null>"}'");
                                            _isConnecting = false;
@@ -67,13 +67,13 @@ namespace WildsCoop.UI
                                        {
                                            SetShowErrorMessage($"Connection failed");
                                            _isConnecting = false;
-                                       }
+                                       }*/
                                    });
                                }
                            }
                            else
                            {
-                               CoopClient.CancelConnect();
+                               //CoopClient.CancelConnect();
                            }
                        }
                    }, "Join Game");

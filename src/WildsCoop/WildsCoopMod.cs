@@ -8,6 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.UI;
+using WildsCoop.Network;
 using WildsCoop.UI;
 
 namespace WildsCoop
@@ -43,6 +44,15 @@ namespace WildsCoop
         public override void OnApplicationStart()
         {
             LoggerInstance.Msg("Wilds Mods Loaded !");
+
+            var owServer = OuterWildsServer.CreateServer(new ServerConfiguration { MOTD = "Simple Outer wilds server." });
+            owServer.Start();
+
+            var owClient = new OuterWildsClient();
+            var result = owClient.ConnectTo("127.0.0.1", timeoutMillisecond: 5000);
+            if (!result)
+                MelonDebug.Msg("Failed to connect to 127.0.0.1");
+            owClient.SendMotdRequest(true);
 
             base.OnApplicationStart();
         }
