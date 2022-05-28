@@ -7,6 +7,19 @@ using System.Threading.Tasks;
 
 namespace WildsCoop.Network.Packets.Client
 {
+    /// <summary>
+    /// Used to ask the server for this information, must send back a <see cref="Server.ServerInformationPacket"/>
+    /// <list type="number"> 
+    /// <item>
+    ///    <term>String</term>
+    ///    <description>ClientVersion</description>
+    /// </item>
+    /// <item>
+    ///    <term>Bool</term>
+    ///    <description>WantToDisconnectAfter</description>
+    /// </item>
+    /// </list>
+    /// </summary>
     public class ServerInformationRequestPacket : INetPacket
     {
         public string ClientVersion { get; set; }
