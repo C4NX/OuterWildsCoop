@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -12,12 +13,25 @@ namespace OuterWildsServer
     public class Program
     {
         public static OWServer Instance { get; private set; }
+
         static void Main(string[] args)
         {
             SimpleLogger.Instance.Info("Starting Server...");
 
             Instance = OWServer.CreateServer(new ServerConfiguration { PrintLogs=true });
-            Instance.Start();
+
+            try
+            {
+                Instance.Start();
+            }
+            catch (SocketException ex)
+            {
+                SimpleLogger.Instance.Error($"Error while starting the server: {ex.Message}");
+                return;
+            }
+
+            if (Instance.IsRunning)
+                SimpleLogger.Instance.Info($"Server is running at 127.0.0.1:{Instance.GetLidgrenServer().Port}");
 
             while (Instance.IsRunning)
             {

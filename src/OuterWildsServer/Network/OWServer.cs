@@ -26,11 +26,22 @@ namespace OuterWildsServer.Network
         private List<OwPlayer> _players;
         private NetPacketsProvider _packetProvider;
         private ServerConfiguration _configuration;
+        private DateTime _lastMessageTime;
+
+        /// <summary>
+        /// Get if this server is loaded in Outer Wilds directly.
+        /// </summary>
+        public static bool IsServerInGame => AppDomain.CurrentDomain.GetAssemblies().Any((e) => e.GetName().Name.Equals("MelonLoader", StringComparison.InvariantCultureIgnoreCase));
 
         /// <summary>
         /// Get if the server is running, more exactly its socket.
         /// </summary>
         public bool IsRunning => _server != null && _server.Status == NetPeerStatus.Running;
+
+        /// <summary>
+        /// Get if the server is sleeping, message thread will wait a lot more.
+        /// </summary>
+        public bool IsSleeping => (DateTime.Now - _lastMessageTime).TotalSeconds > 10;
 
         private OWServer(ServerConfiguration configuration)
         {
@@ -195,8 +206,13 @@ namespace OuterWildsServer.Network
             NetIncomingMessage incomingMessage = null;
             while (server.IsRunning)
             {
+                if (server.IsSleeping)
+                    Thread.Sleep(500);
+
                 while ((incomingMessage = server._server.ReadMessage()) != null)
                 {
+                    server._lastMessageTime = DateTime.Now;
+
                     if (incomingMessage.MessageType == NetIncomingMessageType.Data)
                         server.PushDataMessage(incomingMessage);
                     else if (incomingMessage.MessageType == NetIncomingMessageType.StatusChanged)

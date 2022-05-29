@@ -21,6 +21,7 @@ namespace WildsCoop.Network
         private NetClient _client;
         private NetConnection _serverConnection;
         private NetPacketsProvider _packetProvider;
+        private DateTime _lastMessageTime;
         private ServerInformationPacket _serverInformation;
         private bool _isLoggedIn;
         private Guid _playerId;
@@ -35,6 +36,12 @@ namespace WildsCoop.Network
         /// Get if the client is running or connected, running does not mean that he is connected to a server.
         /// </summary>
         public bool IsRunningOrConnected => (_client != null && _client.Status == NetPeerStatus.Running) || IsConnected;
+
+        /// <summary>
+        /// Get if the server is sleeping, message thread will wait a lot more.
+        /// </summary>
+        public bool IsSleeping => (DateTime.Now - _lastMessageTime).TotalSeconds > 10;
+
 
         /// <summary>
         /// Get if the server information was received, to get the information needed, ask him nicely <see cref="RequestServerInformation(bool, string)"/>
@@ -84,7 +91,7 @@ namespace WildsCoop.Network
             ClientLog($"Before while connection is : {_client.ConnectionStatus}");
             while (_client.ConnectionStatus != NetConnectionStatus.Connected)
             {
-                ClientLog($"Waiting for Connected state got {_client.ConnectionStatus}");
+                Thread.Sleep(500);
                 if (timeoutMillisecond != -1 && timeoutStopwatch.ElapsedMilliseconds > timeoutMillisecond)
                     break;
             }
@@ -178,8 +185,13 @@ namespace WildsCoop.Network
             NetIncomingMessage incomingMessage = null;
             while (client.IsRunningOrConnected)
             {
+                if (client.IsSleeping)
+                    Thread.Sleep(500);
+
                 while ((incomingMessage = client._client.ReadMessage()) != null)
                 {
+                    client._lastMessageTime = DateTime.Now;
+
                     if (incomingMessage.MessageType == NetIncomingMessageType.Data)
                         client.PushDataMessage(incomingMessage);
                     else if (incomingMessage.MessageType == NetIncomingMessageType.StatusChanged)

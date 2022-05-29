@@ -49,6 +49,8 @@ namespace WildsCoop
             /*var owServer = OWServer.CreateServer(new ServerConfiguration { MOTD = "Simple Outer wilds server.", Password="Test" });
             owServer.Start();*/
 
+            MelonDebug.Msg($"DEBUG IS GAME: {OWServer.IsServerInGame}");
+
             var owClient = new OWClient();
             var result = owClient.ConnectTo("127.0.0.1", timeoutMillisecond: 5000);
             if (!result)
