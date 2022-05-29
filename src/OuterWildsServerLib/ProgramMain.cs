@@ -11,13 +11,12 @@ using System.Threading.Tasks;
 
 namespace OuterWildsServerLib
 {
-    public class Program
+    public class ProgramMain
     {
         public static OWServer Instance { get; private set; }
 
         public static void Main(string[] args)
         {
-            Console.WriteLine(Assembly.GetExecutingAssembly().GetName().ToString());
             SimpleLogger.Instance.Info("Starting Server...");
 
             Instance = OWServer.CreateServer(new ServerConfiguration { PrintLogs=true });

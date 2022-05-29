@@ -8,6 +8,6 @@ namespace OuterWildsServer
 {
     internal class Program
     {
-        public static void Main(string[] args) => OuterWildsServerLib.Program.Main(args);
+        public static void Main(string[] args) => OuterWildsServerLib.ProgramMain.Main(args);
     }
 }
