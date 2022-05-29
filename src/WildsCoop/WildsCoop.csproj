@@ -345,9 +345,9 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\OuterWildsServer\OuterWildsServer.csproj">
-      <Project>{e011c571-4c11-41fb-ae0f-054465b9752a}</Project>
-      <Name>OuterWildsServer</Name>
+    <ProjectReference Include="..\OuterWildsServerLib\OuterWildsServerLib.csproj">
+      <Project>{dd4e7163-1be8-4a06-a4d4-1a1890555986}</Project>
+      <Name>OuterWildsServerLib</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

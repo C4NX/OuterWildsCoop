@@ -1,17 +1,15 @@
-﻿using MelonLoader;
-using System.Reflection;
+﻿using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using WildsCoop;
 
 // Les informations générales relatives à un assembly dépendent de
 // l'ensemble d'attributs suivant. Changez les valeurs de ces attributs pour modifier les informations
 // associées à un assembly.
-[assembly: AssemblyTitle("WildsCoop")]
+[assembly: AssemblyTitle("OuterWildsServerLib")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
-[assembly: AssemblyProduct("WildsCoop")]
+[assembly: AssemblyProduct("OuterWildsServerLib")]
 [assembly: AssemblyCopyright("Copyright ©  2022")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
@@ -22,7 +20,7 @@ using WildsCoop;
 [assembly: ComVisible(false)]
 
 // Le GUID suivant est pour l'ID de la typelib si ce projet est exposé à COM
-[assembly: Guid("797f73ef-52d0-4e5d-b253-aee7ba1a0709")]
+[assembly: Guid("dd4e7163-1be8-4a06-a4d4-1a1890555986")]
 
 // Les informations de version pour un assembly se composent des quatre valeurs suivantes :
 //
@@ -36,6 +34,3 @@ using WildsCoop;
 // [assembly: AssemblyVersion("1.0.*")]
 [assembly: AssemblyVersion("1.0.0.0")]
 [assembly: AssemblyFileVersion("1.0.0.0")]
-
-[assembly: MelonInfo(typeof(WildsCoopMod), "Wilds Coop", "1.0", "C4NX")]
-[assembly: MelonGame("Mobius Digital", "Outer Wilds")]
