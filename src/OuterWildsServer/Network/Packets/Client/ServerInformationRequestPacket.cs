@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace WildsCoop.Network.Packets.Client
+namespace OuterWildsServer.Network.Packets.Client
 {
     /// <summary>
     /// Used to ask the server for this information, must send back a <see cref="Server.ServerInformationPacket"/>

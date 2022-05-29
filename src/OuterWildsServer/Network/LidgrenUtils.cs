@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Lidgren.Network;
 
-namespace WildsCoop.Network
+namespace OuterWildsServer.Network
 {
     public static class LidgrenUtils
     {

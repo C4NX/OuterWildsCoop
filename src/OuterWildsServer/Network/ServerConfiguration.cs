@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace WildsCoop.Network
+namespace OuterWildsServer.Network
 {
     public class ServerConfiguration
     {
@@ -17,7 +17,7 @@ namespace WildsCoop.Network
         public string MOTD { get; set; }
         public string Password { get; set; }
 
-        public ServerConfiguration(int port = OuterWildsServer.PORT_DEFAULT)
+        public ServerConfiguration(int port = OWServer.PORT_DEFAULT)
         {
             _port = port;
             MOTD = DEFAULT_MOTD;
@@ -26,7 +26,7 @@ namespace WildsCoop.Network
 
         internal NetPeerConfiguration CreatePeerConfiguration()
         {
-            return new NetPeerConfiguration(OuterWildsServer.LIDGREN_APP_IDENTIFIER)
+            return new NetPeerConfiguration(OWServer.LIDGREN_APP_IDENTIFIER)
             {
                 AutoFlushSendQueue = true,
                 NetworkThreadName = "Server-Network",

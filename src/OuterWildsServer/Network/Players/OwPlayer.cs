@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace WildsCoop.Network.Players
+namespace OuterWildsServer.Network.Players
 {
     public class OwPlayer
     {

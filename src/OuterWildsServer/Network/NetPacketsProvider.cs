@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace WildsCoop.Network
+namespace OuterWildsServer.Network
 {
     public class NetPacketsProvider : IEnumerable<KeyValuePair<uint, Type>>
     {

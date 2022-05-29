@@ -1,5 +1,6 @@
 ﻿using Lidgren.Network;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using OuterWildsServer.Network;
 using System;
 using System.Diagnostics;
 using System.IO;
@@ -44,7 +45,7 @@ namespace WildsCoop.Test
         [TestMethod]
         public void CreateServer()
         {
-            var server = OuterWildsServer.CreateServer(new ServerConfiguration());
+            var server = OWServer.CreateServer(new ServerConfiguration());
             server.Start();
             Assert.IsTrue(server.IsRunning);
             server.Dispose();
@@ -53,10 +54,10 @@ namespace WildsCoop.Test
         [TestMethod]
         public void ListenningMessageToServer()
         {
-            var server = OuterWildsServer.CreateServer(new ServerConfiguration() { MOTD = "Hello World"});
+            var server = OWServer.CreateServer(new ServerConfiguration() { MOTD = "Hello World"});
             server.Start();
 
-            OuterWildsClient outerWildsClient = new OuterWildsClient();
+            OWClient outerWildsClient = new OWClient();
             Assert.IsTrue(outerWildsClient.ConnectTo("127.0.0.1", timeoutMillisecond: 5000), "Failed to connect to the server");
 
             outerWildsClient.RequestServerInformation(true);

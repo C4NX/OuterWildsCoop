@@ -1,5 +1,6 @@
 ﻿using HarmonyLib;
 using MelonLoader;
+using OuterWildsServer.Network;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -45,10 +46,10 @@ namespace WildsCoop
         {
             LoggerInstance.Msg("Wilds Mods Loaded !");
 
-            var owServer = OuterWildsServer.CreateServer(new ServerConfiguration { MOTD = "Simple Outer wilds server.", Password="Test" });
-            owServer.Start();
+            /*var owServer = OWServer.CreateServer(new ServerConfiguration { MOTD = "Simple Outer wilds server.", Password="Test" });
+            owServer.Start();*/
 
-            var owClient = new OuterWildsClient();
+            var owClient = new OWClient();
             var result = owClient.ConnectTo("127.0.0.1", timeoutMillisecond: 5000);
             if (!result)
                 MelonDebug.Msg("Failed to connect to 127.0.0.1");

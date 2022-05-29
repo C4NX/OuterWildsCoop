@@ -1,25 +1,26 @@
 ﻿using Lidgren.Network;
-using MelonLoader;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using WildsCoop.Network.Packets.Client;
-using WildsCoop.Network.Packets.Server;
-using WildsCoop.Network.Players;
+using OuterWildsServer.Network.Packets.Client;
+using OuterWildsServer.Network.Packets.Server;
+using OuterWildsServer.Network.Players;
+using OuterWildsServer.Utils;
 
-namespace WildsCoop.Network
+namespace OuterWildsServer.Network
 {
     /// <summary>
     /// A class that represents an OuterWilds server.
     /// </summary>
-    public class OuterWildsServer : IDisposable
+    public class OWServer : IDisposable
     {
         public const string LIDGREN_APP_IDENTIFIER = "OUTERWILDS";
         public const int PORT_DEFAULT = 14177;
-        public const string VERSION = "OWC 1.0";
+        public const string SERVER_VERSION = "OWC 1.0";
+        public const string GAME_VERSION = "TODO: ADD GAME VERSION";
 
         private NetServer _server;
         private List<OwPlayer> _players;
@@ -31,7 +32,7 @@ namespace WildsCoop.Network
         /// </summary>
         public bool IsRunning => _server != null && _server.Status == NetPeerStatus.Running;
 
-        private OuterWildsServer(ServerConfiguration configuration)
+        private OWServer(ServerConfiguration configuration)
         {
             _configuration = configuration;
             _server = new NetServer(_configuration.CreatePeerConfiguration());
@@ -57,14 +58,16 @@ namespace WildsCoop.Network
             ThreadPool.QueueUserWorkItem(OnMessageThreadItem, this);
         }
 
+        public void Stop() => _server.Shutdown(string.Empty);
+
         /// <summary>
         /// Create an outer wilds server with a specific configuration.
         /// </summary>
         /// <param name="serverConfiguration">The <see cref="ServerConfiguration"/> to be used</param>
         /// <returns></returns>
-        public static OuterWildsServer CreateServer(ServerConfiguration serverConfiguration)
+        public static OWServer CreateServer(ServerConfiguration serverConfiguration)
         {
-            return new OuterWildsServer(serverConfiguration);
+            return new OWServer(serverConfiguration);
         }
 
         /// <summary>
@@ -72,8 +75,11 @@ namespace WildsCoop.Network
         /// </summary>
         public void Dispose()
         {
-            _server.Socket.Shutdown(System.Net.Sockets.SocketShutdown.Both);
-            _server.Socket.Close(5000);
+            if (_server.Socket.Connected)
+            {
+                _server.Socket.Shutdown(System.Net.Sockets.SocketShutdown.Both);
+                _server.Socket.Close(5000);
+            }
             _server = null;
         }
 
@@ -95,7 +101,7 @@ namespace WildsCoop.Network
                     //Send information
                     ServerRespond(netIncomingMessage.SenderConnection, new ServerInformationPacket() { 
                         IsDisconnectRequest = ((ServerInformationRequestPacket)packetReceived).WantToDisconnectAfter, 
-                        MOTD = _configuration.MOTD, GameVersion=UnityEngine.Application.version 
+                        MOTD = _configuration.MOTD, GameVersion=GAME_VERSION
                     });
                 }
 
@@ -182,10 +188,10 @@ namespace WildsCoop.Network
         /// <summary>
         /// Method that is executed on the <see cref="ThreadPool"/>, and which serves as a message reading loop for the server.
         /// </summary>
-        /// <param name="sender">The <see cref="OuterWildsServer"/> instance to use</param>
+        /// <param name="sender">The <see cref="OWServer"/> instance to use</param>
         private static void OnMessageThreadItem(object sender)
         {
-            OuterWildsServer server = (OuterWildsServer)sender;
+            OWServer server = (OWServer)sender;
             NetIncomingMessage incomingMessage = null;
             while (server.IsRunning)
             {
@@ -199,6 +205,6 @@ namespace WildsCoop.Network
             }
         }
 
-        private static void ServerLog(string message) => MelonDebug.Msg($"[SERVER] {message}");
+        private static void ServerLog(string message) => SimpleLogger.Instance.Info(message); 
     }
 }

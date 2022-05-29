@@ -332,16 +332,7 @@
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Network\LidgrenUtils.cs" />
-    <Compile Include="Network\NetPacketsProvider.cs" />
-    <Compile Include="Network\OuterWildsClient.cs" />
-    <Compile Include="Network\OuterWildsServer.cs" />
-    <Compile Include="Network\Packets\Client\LoginRequestPacket.cs" />
-    <Compile Include="Network\Packets\Client\ServerInformationRequestPacket.cs" />
-    <Compile Include="Network\Packets\Server\LoginResultPacket.cs" />
-    <Compile Include="Network\Packets\Server\ServerInformationPacket.cs" />
-    <Compile Include="Network\Players\OwPlayer.cs" />
-    <Compile Include="Network\ServerConfiguration.cs" />
+    <Compile Include="Network\OWClient.cs" />
     <Compile Include="Network\ServerConnectionInformation.cs" />
     <Compile Include="UI\CoopMainMenu.cs" />
     <Compile Include="Patchs\FadeInMenuOptions.cs" />
@@ -352,6 +343,12 @@
   <ItemGroup>
     <None Include="app.config" />
     <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\OuterWildsServer\OuterWildsServer.csproj">
+      <Project>{e011c571-4c11-41fb-ae0f-054465b9752a}</Project>
+      <Name>OuterWildsServer</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

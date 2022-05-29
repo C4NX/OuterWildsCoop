@@ -7,15 +7,16 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using WildsCoop.Network.Packets.Client;
-using WildsCoop.Network.Packets.Server;
+using OuterWildsServer.Network.Packets.Client;
+using OuterWildsServer.Network.Packets.Server;
+using OuterWildsServer.Network;
 
 namespace WildsCoop.Network
 {
     /// <summary>
     /// A class that represents an OuterWilds client, which can connect to a OuterWilds Server.
     /// </summary>
-    public class OuterWildsClient : IDisposable
+    public class OWClient : IDisposable
     {
         private NetClient _client;
         private NetConnection _serverConnection;
@@ -44,7 +45,7 @@ namespace WildsCoop.Network
         /// </summary>
         public string ServerGameVersion => _serverInformation.GameVersion;
 
-        public OuterWildsClient()
+        public OWClient()
         {
         }
 
@@ -57,12 +58,12 @@ namespace WildsCoop.Network
         /// <param name="port">Port to connect, by default <see cref="OuterWildsServer.PORT_DEFAULT"/></param>
         /// <param name="timeoutMillisecond">Server connection timeout, by default <see cref="Timeout.Infinite"/></param>
         /// <returns></returns>
-        public bool ConnectTo(string ipOrHost, int port = OuterWildsServer.PORT_DEFAULT, long timeoutMillisecond = Timeout.Infinite)
+        public bool ConnectTo(string ipOrHost, int port = OWServer.PORT_DEFAULT, long timeoutMillisecond = Timeout.Infinite)
         {
             if (IsConnected)
                 return true;
 
-            _client = new NetClient(new NetPeerConfiguration(OuterWildsServer.LIDGREN_APP_IDENTIFIER));
+            _client = new NetClient(new NetPeerConfiguration(OWServer.LIDGREN_APP_IDENTIFIER));
             _packetProvider = new NetPacketsProvider(_client)
                 //Add Client/Side Packets
                 .AddPacket<ServerInformationRequestPacket>(1)
@@ -101,12 +102,12 @@ namespace WildsCoop.Network
         /// <param name="requestDisconnectAfter">Tells the server if it should close the connection right after, used for server listing.</param>
         /// <param name="clientVersion">Client version to give to the server, default to <see cref="OuterWildsServer.VERSION"/></param>
         /// <returns></returns>
-        public bool RequestServerInformation(bool requestDisconnectAfter,string clientVersion = OuterWildsServer.VERSION)
+        public bool RequestServerInformation(bool requestDisconnectAfter,string clientVersion = OWServer.SERVER_VERSION)
         {
             return _serverConnection.SendMessage(_packetProvider.Deserialize(new ServerInformationRequestPacket{ ClientVersion = clientVersion, WantToDisconnectAfter=requestDisconnectAfter }), NetDeliveryMethod.ReliableSequenced, 0) == NetSendResult.Sent;
         }
 
-        public bool RequestLogin(string username, string password = "", string clientVersion = OuterWildsServer.VERSION)
+        public bool RequestLogin(string username, string password = "", string clientVersion = OWServer.SERVER_VERSION)
         {
             return _serverConnection.SendMessage(_packetProvider.Deserialize(new LoginRequestPacket { ClientVersion= clientVersion, GameVersion=UnityEngine.Application.version, Password=password, Username=username}), NetDeliveryMethod.ReliableSequenced, 0) == NetSendResult.Sent;
         }
@@ -170,10 +171,10 @@ namespace WildsCoop.Network
         /// <summary>
         /// Method that is executed on the <see cref="ThreadPool"/>, and which serves as a message reading loop for the client.
         /// </summary>
-        /// <param name="sender">The <see cref="OuterWildsClient"/> Instance to use</param>
+        /// <param name="sender">The <see cref="OWClient"/> Instance to use</param>
         private static void OnMessageThreadItem(object sender)
         {
-            OuterWildsClient client = (OuterWildsClient)sender;
+            OWClient client = (OWClient)sender;
             NetIncomingMessage incomingMessage = null;
             while (client.IsRunningOrConnected)
             {

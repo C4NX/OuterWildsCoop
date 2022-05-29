@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace WildsCoop.Network.Packets.Client
+namespace OuterWildsServer.Network.Packets.Client
 {
     public class LoginRequestPacket : INetPacket
     {
