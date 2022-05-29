@@ -21,6 +21,9 @@ namespace WildsCoop.Network
         private NetConnection _serverConnection;
         private NetPacketsProvider _packetProvider;
         private ServerInformationPacket _serverInformation;
+        private bool _isLoggedIn;
+        private Guid _playerId;
+        private string _username;
 
         /// <summary>
         /// Get if the client is connected to the server and is not disposed.
@@ -63,8 +66,10 @@ namespace WildsCoop.Network
             _packetProvider = new NetPacketsProvider(_client)
                 //Add Client/Side Packets
                 .AddPacket<ServerInformationRequestPacket>(1)
+                .AddPacket<LoginRequestPacket>(2)
                 //Add Server/Side Packets
-                .AddPacket<ServerInformationPacket>(101);
+                .AddPacket<ServerInformationPacket>(101)
+                .AddPacket<LoginResultPacket>(102);
 
             LogPacketProvider(_packetProvider);
 
@@ -101,6 +106,11 @@ namespace WildsCoop.Network
             return _serverConnection.SendMessage(_packetProvider.Deserialize(new ServerInformationRequestPacket{ ClientVersion = clientVersion, WantToDisconnectAfter=requestDisconnectAfter }), NetDeliveryMethod.ReliableSequenced, 0) == NetSendResult.Sent;
         }
 
+        public bool RequestLogin(string username, string password = "", string clientVersion = OuterWildsServer.VERSION)
+        {
+            return _serverConnection.SendMessage(_packetProvider.Deserialize(new LoginRequestPacket { ClientVersion= clientVersion, GameVersion=UnityEngine.Application.version, Password=password, Username=username}), NetDeliveryMethod.ReliableSequenced, 0) == NetSendResult.Sent;
+        }
+
         /// <summary>
         /// Transform the received data into a readable message with <see cref="NetPacketsProvider"/>, and execute the action associated to this message.
         /// </summary>
@@ -117,6 +127,23 @@ namespace WildsCoop.Network
             if (packetReceived is ServerInformationPacket)
             {
                 _serverInformation = (ServerInformationPacket)packetReceived;
+                ClientLog($"{_serverInformation} IP={_serverConnection.RemoteEndPoint}");
+            }
+
+            if (packetReceived is LoginResultPacket)
+            {
+                var loginResult = (LoginResultPacket)packetReceived;
+                if (loginResult.IsLoggedIn)
+                {
+                    _playerId = loginResult.UserId;
+                    _username = loginResult.Username;
+                    _isLoggedIn = true;
+                    ClientLog($"Logged to the server ID={_playerId} USERNAME={_username}");
+                }
+                else
+                {
+                    ClientLog($"Login to the server failed: {loginResult.Message}");
+                }
                 ClientLog($"{_serverInformation} IP={_serverConnection.RemoteEndPoint}");
             }
         }

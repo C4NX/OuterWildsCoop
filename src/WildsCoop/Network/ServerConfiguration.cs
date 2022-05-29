@@ -15,11 +15,13 @@ namespace WildsCoop.Network
 
         public int Port => _port;
         public string MOTD { get; set; }
+        public string Password { get; set; }
 
         public ServerConfiguration(int port = OuterWildsServer.PORT_DEFAULT)
         {
             _port = port;
             MOTD = DEFAULT_MOTD;
+            Password = null;
         }
 
         internal NetPeerConfiguration CreatePeerConfiguration()

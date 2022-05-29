@@ -2,6 +2,8 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Diagnostics;
+using System.IO;
+using System.Reflection;
 using System.Threading;
 using WildsCoop.Network;
 
@@ -10,11 +12,36 @@ namespace WildsCoop.Test
     [TestClass]
     public class OuterWildServerTest
     {
+        public string[] resolvesDirectories = new string[]
+        {
+            Path.Combine(Environment.GetCommandLineArgs()[0], "/MelonLoader/"),
+            Path.Combine(Environment.GetCommandLineArgs()[0], "/Mods/"),
+            Path.Combine(Environment.GetCommandLineArgs()[0], "/UserLibs/"),
+            Path.Combine(Environment.GetCommandLineArgs()[0], "/OuterWilds_Data/Managed/"),
+        };
+
+        public OuterWildServerTest()
+        {
+            AppDomain.CurrentDomain.AssemblyResolve += (s, e) =>
+            {
+                foreach (var item in resolvesDirectories)
+                {
+                    foreach (var item2 in Directory.GetFiles(item, "*.dll", SearchOption.AllDirectories))
+                    {
+                        if (Path.GetFileNameWithoutExtension(item2) == new AssemblyName(e.Name).Name)
+                        {
+                            return Assembly.LoadFile(item2);
+                        }
+                    }
+                }
+                return null;
+            };
+        }
+
         /// <summary>
         /// Basic server socket running
         /// </summary>
         [TestMethod]
-        [TestCategory("Base")]
         public void CreateServer()
         {
             var server = OuterWildsServer.CreateServer(new ServerConfiguration());
@@ -24,89 +51,30 @@ namespace WildsCoop.Test
         }
 
         [TestMethod]
-        [TestCategory("Base")]
         public void ListenningMessageToServer()
         {
-            var server = OuterWildsServer.CreateServer(new ServerConfiguration());
+            var server = OuterWildsServer.CreateServer(new ServerConfiguration() { MOTD = "Hello World"});
             server.Start();
 
-            Assert.IsTrue(server.IsRunning);
+            OuterWildsClient outerWildsClient = new OuterWildsClient();
+            Assert.IsTrue(outerWildsClient.ConnectTo("127.0.0.1", timeoutMillisecond: 5000), "Failed to connect to the server");
 
-            ThreadPool.QueueUserWorkItem(FakeThreadThread, server.GetLidgrenServer());
+            outerWildsClient.RequestServerInformation(true);
+            WaitForSync(() => !outerWildsClient.HasServerInformation, TimeSpan.FromSeconds(5));
 
-            NetClient netClient = new NetClient(new NetPeerConfiguration(OuterWildsServer.LIDGREN_APP_IDENTIFIER)
-            {
-                Port = OuterWildsServer.PORT_DEFAULT-1
-            });
-            netClient.Start();
-            WaitForPeer(netClient, TimeSpan.FromSeconds(5));
-
-            var serverConnection = netClient.Connect("127.0.0.1", OuterWildsServer.PORT_DEFAULT);
-            ThreadPool.QueueUserWorkItem(FakeThreadThread, netClient);
-
-            WaitForConnect(serverConnection, TimeSpan.FromSeconds(5));
-
-            var sendResult = serverConnection.SendMessage(netClient.CreateMessage("Hello World"), NetDeliveryMethod.ReliableOrdered, 0);
-            Assert.IsTrue(sendResult == NetSendResult.Sent || sendResult == NetSendResult.Queued, $"Impossible d'envoyer un message: {sendResult}");
-
-            netClient.Socket.Shutdown(System.Net.Sockets.SocketShutdown.Both);
-            netClient.Socket.Close(5000);
+            server.Dispose();
+            outerWildsClient.Dispose();
         }
 
-        public static void WaitForPeer(NetPeer netPeer, TimeSpan timeout)
+        public void WaitForSync(Func<bool> cond, TimeSpan timeout)
         {
             Stopwatch stopwatch = Stopwatch.StartNew();
-            while (netPeer.Status != NetPeerStatus.Running)
+            while (cond())
             {
                 Thread.Sleep(500);
                 if (stopwatch.Elapsed > timeout)
-                    throw new TimeoutException("WaitForPeer: Peer timed-out");
-            }
-        }
-
-        public static void WaitForConnect(NetConnection netConnection, TimeSpan timeout)
-        {
-            Stopwatch stopwatch = Stopwatch.StartNew();
-            while (netConnection.Status != NetConnectionStatus.Connected)
-            {
-                Thread.Sleep(500);
-                if (stopwatch.Elapsed > timeout)
-                    throw new TimeoutException("WaitForConnect: Connection timed-out");
-            }
-        }
-
-        private void FakeThreadThread(object clientOrServerSender)
-        {
-            bool isServer = clientOrServerSender is NetServer;
-            NetIncomingMessage netIncomingMessage = null;
-
-            if (isServer)
-            {
-                while (((NetServer)clientOrServerSender).Status == NetPeerStatus.Running)
                 {
-                    while ((netIncomingMessage = ((NetServer)clientOrServerSender).ReadMessage()) != null)
-                    {
-                        if(netIncomingMessage.MessageType == NetIncomingMessageType.StatusChanged)
-                        {
-                            if (netIncomingMessage.SenderConnection.Status == NetConnectionStatus.Connected)
-                            {
-                                Console.WriteLine($"[SERVER] Client {netIncomingMessage.SenderEndPoint} connected");
-                            }
-                        }
-                        Console.WriteLine($"[SERVER] Event: {netIncomingMessage.MessageType} ({netIncomingMessage.SenderConnection?.Status})");
-                        Console.WriteLine($"[SERVER] Received from client: {((clientOrServerSender is NetServer) ? "Server" : "Client")}: {netIncomingMessage.Data.Length} bytes");
-                    }
-                }
-            }
-            else
-            {
-                while (((NetClient)clientOrServerSender).Status == NetPeerStatus.Running)
-                {
-                    while ((netIncomingMessage = ((NetClient)clientOrServerSender).ReadMessage()) != null)
-                    {
-                        Console.WriteLine($"[CLIENT] Event: {netIncomingMessage.MessageType} ({netIncomingMessage.SenderConnection.Status})");
-                        Console.WriteLine($"[CLIENT] Received from Server: {netIncomingMessage.Data.Length} bytes");
-                    }
+                    throw new TimeoutException("WaitForSync: Timed out !");
                 }
             }
         }

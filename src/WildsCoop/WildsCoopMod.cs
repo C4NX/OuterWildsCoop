@@ -45,7 +45,7 @@ namespace WildsCoop
         {
             LoggerInstance.Msg("Wilds Mods Loaded !");
 
-            var owServer = OuterWildsServer.CreateServer(new ServerConfiguration { MOTD = "Simple Outer wilds server." });
+            var owServer = OuterWildsServer.CreateServer(new ServerConfiguration { MOTD = "Simple Outer wilds server.", Password="Test" });
             owServer.Start();
 
             var owClient = new OuterWildsClient();
@@ -53,6 +53,7 @@ namespace WildsCoop
             if (!result)
                 MelonDebug.Msg("Failed to connect to 127.0.0.1");
             owClient.RequestServerInformation(true);
+            owClient.RequestLogin("C4NX");
 
             base.OnApplicationStart();
         }

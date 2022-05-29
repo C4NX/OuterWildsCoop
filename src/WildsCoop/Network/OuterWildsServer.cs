@@ -8,6 +8,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using WildsCoop.Network.Packets.Client;
 using WildsCoop.Network.Packets.Server;
+using WildsCoop.Network.Players;
 
 namespace WildsCoop.Network
 {
@@ -21,6 +22,7 @@ namespace WildsCoop.Network
         public const string VERSION = "OWC 1.0";
 
         private NetServer _server;
+        private List<OwPlayer> _players;
         private NetPacketsProvider _packetProvider;
         private ServerConfiguration _configuration;
 
@@ -36,8 +38,12 @@ namespace WildsCoop.Network
             _packetProvider = new NetPacketsProvider(_server)
                 //Add Client/Side Packets
                 .AddPacket<ServerInformationRequestPacket>(1)
+                .AddPacket<LoginRequestPacket>(2)
                 //Add Server/Side Packets
-                .AddPacket<ServerInformationPacket>(101);
+                .AddPacket<ServerInformationPacket>(101)
+                .AddPacket<LoginResultPacket>(102);
+
+            _players = new List<OwPlayer>();
         }
 
         /// <summary>
@@ -86,10 +92,55 @@ namespace WildsCoop.Network
             {
                 if (packetReceived is ServerInformationRequestPacket)
                 {
+                    //Send information
                     ServerRespond(netIncomingMessage.SenderConnection, new ServerInformationPacket() { 
                         IsDisconnectRequest = ((ServerInformationRequestPacket)packetReceived).WantToDisconnectAfter, 
                         MOTD = _configuration.MOTD, GameVersion=UnityEngine.Application.version 
                     });
+                }
+
+                if (packetReceived is LoginRequestPacket)
+                {
+                    //TODO: Add password checks & more checks & more checks....
+                    var loginPacket = (LoginRequestPacket)packetReceived;
+
+                    string loginMessage = "Welcome Home !";
+                    bool isLoggedIn = true;
+
+                    //Password is wrong sooo...
+                    if (!string.IsNullOrWhiteSpace(_configuration.Password) && loginPacket.Password != _configuration.Password)
+                    {
+                        loginMessage = "Incorect password.";
+                        isLoggedIn = false;
+                    }
+
+                    if (isLoggedIn)
+                    {
+                        //Create the new player and add it.
+                        var newPlayer = new OwPlayer(Guid.NewGuid(), netIncomingMessage.SenderConnection, loginPacket.Username);
+                        _players.Add(newPlayer);
+
+
+                        ServerLog($"New Player as joined {newPlayer.GetUsername()}({newPlayer.GetGuid()})");
+
+                        //Send OK, with id,username,message.
+                        ServerRespond(netIncomingMessage.SenderConnection, new LoginResultPacket
+                        {
+                            IsLoggedIn = true,
+                            UserId = newPlayer.GetGuid(),
+                            Username = newPlayer.GetUsername(),
+                            Message = loginMessage
+                        });
+                    }
+                    else
+                    {
+                        //Send failed, with message.
+                        ServerRespond(netIncomingMessage.SenderConnection, new LoginResultPacket
+                        {
+                            IsLoggedIn = false,
+                            Message = loginMessage
+                        });
+                    }
                 }
 
                 ServerLog($"Packet is {packetReceived.GetType().FullName} ({packetId})");
