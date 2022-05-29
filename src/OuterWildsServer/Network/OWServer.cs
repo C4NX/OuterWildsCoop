@@ -89,7 +89,7 @@ namespace OuterWildsServer.Network
         /// <param name="netIncomingMessage">Data</param>
         internal void PushDataMessage(NetIncomingMessage netIncomingMessage)
         {
-            ServerLog($"Received {netIncomingMessage.LengthBytes}B from {netIncomingMessage.SenderEndPoint}");
+            ServerLog($"Received {netIncomingMessage.LengthBytes}B from {netIncomingMessage.SenderEndPoint}", true);
 
             uint packetId = 0;
             var packetReceived = _packetProvider.Serialize(netIncomingMessage, out packetId);
@@ -127,7 +127,7 @@ namespace OuterWildsServer.Network
                         _players.Add(newPlayer);
 
 
-                        ServerLog($"New Player as joined {newPlayer.GetUsername()}({newPlayer.GetGuid()})");
+                        ServerLog($"New Player as joined {newPlayer.GetUsername()}({newPlayer.GetGuid()})", false);
 
                         //Send OK, with id,username,message.
                         ServerRespond(netIncomingMessage.SenderConnection, new LoginResultPacket
@@ -149,11 +149,11 @@ namespace OuterWildsServer.Network
                     }
                 }
 
-                ServerLog($"Packet is {packetReceived.GetType().FullName} ({packetId})");
+                ServerLog($"Packet is {packetReceived.GetType().FullName} ({packetId})", true);
             }
             else
             {
-                ServerLog($"Ignore {packetId} from {netIncomingMessage.SenderEndPoint}");
+                ServerLog($"Ignore {packetId} from {netIncomingMessage.SenderEndPoint}", true);
             }
         }
 
@@ -163,7 +163,7 @@ namespace OuterWildsServer.Network
         /// <param name="netIncomingMessage">Data</param>
         internal void PushStateMessage(NetIncomingMessage netIncomingMessage)
         {
-            ServerLog($"State of {netIncomingMessage.SenderEndPoint} changed to {netIncomingMessage.SenderConnection?.Status}");
+            ServerLog($"State of {netIncomingMessage.SenderEndPoint} changed to {netIncomingMessage.SenderConnection?.Status}", true);
         }
 
         /// <summary>
@@ -205,6 +205,19 @@ namespace OuterWildsServer.Network
             }
         }
 
-        private static void ServerLog(string message) => SimpleLogger.Instance.Info(message); 
+        private void ServerLog(string message, bool trace)
+        {
+            if (_configuration.PrintLogs)
+            {
+                if (trace)
+                {
+                    SimpleLogger.Instance.Trace(message); 
+                }
+                else
+                {
+                    SimpleLogger.Instance.Info(message);
+                }
+            }
+        }
     }
 }

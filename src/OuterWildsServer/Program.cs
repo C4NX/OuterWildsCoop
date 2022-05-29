@@ -16,7 +16,7 @@ namespace OuterWildsServer
         {
             SimpleLogger.Instance.Info("Starting Server...");
 
-            Instance = OWServer.CreateServer(new ServerConfiguration { });
+            Instance = OWServer.CreateServer(new ServerConfiguration { PrintLogs=true });
             Instance.Start();
 
             while (Instance.IsRunning)

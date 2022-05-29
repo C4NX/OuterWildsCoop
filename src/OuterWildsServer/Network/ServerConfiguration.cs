@@ -16,6 +16,7 @@ namespace OuterWildsServer.Network
         public int Port => _port;
         public string MOTD { get; set; }
         public string Password { get; set; }
+        public bool PrintLogs { get; set; } = false;
 
         public ServerConfiguration(int port = OWServer.PORT_DEFAULT)
         {
