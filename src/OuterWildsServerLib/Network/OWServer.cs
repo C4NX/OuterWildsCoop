@@ -214,6 +214,20 @@ namespace OuterWildsServer.Network
         public string GetMOTD() => _configuration.MOTD;
 
         /// <summary>
+        /// Set the server password
+        /// </summary>
+        /// <param name="motd">The new password or null</param>
+        public void SetPassword(string password)
+        {
+            _configuration.Password = password;
+        }
+        /// <summary>
+        /// Get the current password
+        /// </summary>
+        /// <returns>The current password</returns>
+        public string GetPassword() => _configuration.Password;
+
+        /// <summary>
         /// Method that is executed on the <see cref="ThreadPool"/>, and which serves as a message reading loop for the server.
         /// </summary>
         /// <param name="sender">The <see cref="OWServer"/> instance to use</param>

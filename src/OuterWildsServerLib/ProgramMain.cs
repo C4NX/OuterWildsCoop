@@ -1,8 +1,10 @@
-﻿using OuterWildsServer.Network;
+﻿using Newtonsoft.Json;
+using OuterWildsServer.Network;
 using OuterWildsServer.Utils;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Net.Sockets;
 using System.Reflection;
@@ -19,7 +21,23 @@ namespace OuterWildsServerLib
         {
             SimpleLogger.Instance.Info("Starting Server...");
 
-            Instance = OWServer.CreateServer(new ServerConfiguration { PrintLogs=true });
+            ServerConfiguration serverConfiguration = new ServerConfiguration();
+
+            try
+            {
+                if (File.Exists("owserver.json"))
+                    serverConfiguration = ServerConfiguration.ReadFromFile("owserver.json");
+            }
+            catch (JsonException ex)
+            {
+                SimpleLogger.Instance.Error($"Failed to load the server configuration : {ex.Message}");
+            }
+            finally
+            {
+                serverConfiguration.PrintLogs = true;
+            }
+
+            Instance = OWServer.CreateServer(serverConfiguration);
 
             try
             {
@@ -27,12 +45,18 @@ namespace OuterWildsServerLib
             }
             catch (SocketException ex)
             {
-                SimpleLogger.Instance.Error($"Error while starting the server: {ex.Message}");
+                switch (ex.SocketErrorCode)
+                {
+                    case SocketError.AddressAlreadyInUse:
+                        SimpleLogger.Instance.Warning($"You could not use the port '{Instance.GetLidgrenServer().Configuration.Port}', because it is already in use");
+                        break;
+                }
+                SimpleLogger.Instance.Fatal($"Error while starting the server: {ex.Message}");
                 return;
             }
 
             if (Instance.IsRunning)
-                SimpleLogger.Instance.Info($"Server is running at 127.0.0.1:{Instance.GetLidgrenServer().Port}");
+                SimpleLogger.Instance.Info($"Server is running at {Instance.GetLidgrenServer().Configuration.LocalAddress}:{Instance.GetLidgrenServer().Port}");
 
             while (Instance.IsRunning)
             {
@@ -67,6 +91,21 @@ namespace OuterWildsServerLib
                             {
                                 Instance.SetMOTD(newMotd);
                                 SimpleLogger.Instance.Info($"MOTD was set to '{Instance.GetMOTD()}'");
+                            }
+                            break;
+                        case "PASSWORD":
+                            var newPassword = cmdargs.ElementAtOrDefault(1);
+                            if (newPassword == null)
+                            {
+                                SimpleLogger.Instance.Info($"Password is '{Instance.GetPassword() ?? "<null>"}'");
+                            }
+                            else
+                            {
+                                var passwordUpperTrimed = newPassword.Trim().ToUpper();
+                                newPassword = (passwordUpperTrimed == "NULL" || passwordUpperTrimed == "OFF" || passwordUpperTrimed == "NO") ? null : newPassword;
+
+                                Instance.SetPassword(newPassword);
+                                SimpleLogger.Instance.Info($"Password was set to '{Instance.GetPassword() ?? "<null>"}'");
                             }
                             break;
                         default:

@@ -59,9 +59,9 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\OuterWildsServer\OuterWildsServer.csproj">
-      <Project>{E011C571-4C11-41FB-AE0F-054465B9752A}</Project>
-      <Name>OuterWildsServer</Name>
+    <ProjectReference Include="..\OuterWildsServerLib\OuterWildsServerLib.csproj">
+      <Project>{dd4e7163-1be8-4a06-a4d4-1a1890555986}</Project>
+      <Name>OuterWildsServerLib</Name>
     </ProjectReference>
     <ProjectReference Include="..\WildsCoop\WildsCoop.csproj">
       <Project>{797f73ef-52d0-4e5d-b253-aee7ba1a0709}</Project>

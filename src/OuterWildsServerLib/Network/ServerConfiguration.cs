@@ -1,6 +1,8 @@
 ﻿using Lidgren.Network;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -11,11 +13,18 @@ namespace OuterWildsServer.Network
     {
         public const string DEFAULT_MOTD = "A wilds coop server.";
 
+        [JsonProperty("port")]
         private int _port;
 
+        [JsonIgnore]
         public int Port => _port;
+
+        [JsonProperty("motd")]
         public string MOTD { get; set; }
+        [JsonProperty("password")]
         public string Password { get; set; }
+
+        [JsonIgnore]
         public bool PrintLogs { get; set; } = false;
 
         public ServerConfiguration(int port = OWServer.PORT_DEFAULT)
@@ -35,6 +44,23 @@ namespace OuterWildsServer.Network
                 PingInterval = 5,
                 Port = _port,
             };
+        }
+
+        /// <summary>
+        /// Read configuration from a json file.
+        /// </summary>
+        /// <param name="filename">The filename</param>
+        /// <returns>The readed server configuration</returns>
+        /// <exception cref="JsonException">If the json failed</exception>
+        public static ServerConfiguration ReadFromFile(string filename)
+        {
+            using (FileStream fileStream = File.OpenRead(filename))
+            {
+                using (StreamReader reader = new StreamReader(fileStream))
+                {
+                    return JsonConvert.DeserializeObject<ServerConfiguration>(reader.ReadToEnd());
+                }
+            }
         }
     }
 }
