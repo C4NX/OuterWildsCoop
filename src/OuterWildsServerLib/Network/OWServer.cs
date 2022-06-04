@@ -197,6 +197,23 @@ namespace OuterWildsServer.Network
         public NetServer GetLidgrenServer() => _server;
 
         /// <summary>
+        /// Set the server message of the day
+        /// </summary>
+        /// <param name="motd">The new message of the day</param>
+        /// <exception cref="ArgumentException">If the motd is null</exception>
+        public void SetMOTD(string motd)
+        {
+            if (motd == null)
+                throw new ArgumentException("motd is null");
+            _configuration.MOTD = motd;
+        }
+        /// <summary>
+        /// Get the current message of the day
+        /// </summary>
+        /// <returns></returns>
+        public string GetMOTD() => _configuration.MOTD;
+
+        /// <summary>
         /// Method that is executed on the <see cref="ThreadPool"/>, and which serves as a message reading loop for the server.
         /// </summary>
         /// <param name="sender">The <see cref="OWServer"/> instance to use</param>

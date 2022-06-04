@@ -36,17 +36,60 @@ namespace OuterWildsServerLib
 
             while (Instance.IsRunning)
             {
-                var cmd = Console.ReadLine();
-                if(cmd.Trim().ToUpper() == "STOP")
+                Console.Write('>');
+                var cmdargs = Console.ReadLine().Split('"')
+                                             .Select((element, index) => index % 2 == 0
+                                             ? element.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries)
+                                             : new string[] { element })
+                                              .SelectMany(element => element).ToList();
+                if (cmdargs.Count >= 1)
                 {
-                    Instance.Stop();
-                }
-                else if(cmd.Trim().ToUpper() == "STATS")
-                {
-                    SimpleLogger.Instance.Info($"PT: {Process.GetCurrentProcess().TotalProcessorTime}");
+                    var cmdname = cmdargs[0].ToUpper();
+
+                    switch (cmdname)
+                    {
+                        case "STOP":
+                            Instance.Stop();
+                            break;
+                        case "CLEAR":
+                            Console.Clear();
+                            break;
+                        case "STATS":
+                            SimpleLogger.Instance.Info(GetServerInfoString());
+                            break;
+                        case "MOTD":
+                            var newMotd = cmdargs.ElementAtOrDefault(1);
+                            if (newMotd == null)
+                            {
+                                SimpleLogger.Instance.Info($"MOTD is '{Instance.GetMOTD()}'");
+                            }
+                            else
+                            {
+                                Instance.SetMOTD(newMotd);
+                                SimpleLogger.Instance.Info($"MOTD was set to '{Instance.GetMOTD()}'");
+                            }
+                            break;
+                        default:
+                            SimpleLogger.Instance.Info($"Command '{cmdname}' not found.");
+                            break;
+                    }
                 }
             }
             Instance.Dispose();
+        }
+
+        public static string GetServerInfoString()
+        {
+            StringBuilder sb = new StringBuilder();
+
+            var currentProcess = Process.GetCurrentProcess();
+
+            sb.AppendLine();
+            sb.AppendLine("-----PROCESS-----");
+            sb.AppendLine($"PT: {currentProcess.TotalProcessorTime}");
+            sb.AppendLine($"Threads: {currentProcess.Threads.Count}");
+            sb.AppendLine($"Memory: {currentProcess.PrivateMemorySize64 / 1000000}mo / {currentProcess.PeakVirtualMemorySize64 / 1000000}mo");
+            return sb.ToString();
         }
     }
 }
