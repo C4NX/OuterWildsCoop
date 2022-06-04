@@ -84,7 +84,8 @@ namespace OuterWildsServerLib
 
             var currentProcess = Process.GetCurrentProcess();
 
-            sb.AppendLine();
+            sb.AppendLine()
+                .AppendLine();
             sb.AppendLine("-----PROCESS-----");
             sb.AppendLine($"PT: {currentProcess.TotalProcessorTime}");
             sb.AppendLine($"Threads: {currentProcess.Threads.Count}");

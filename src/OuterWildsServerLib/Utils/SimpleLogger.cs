@@ -53,7 +53,7 @@ namespace OuterWildsServer.Utils
             string logHeader = logFilename + " is created.";
             if (!System.IO.File.Exists(logFilename))
             {
-                WriteLine(System.DateTime.Now.ToString(datetimeFormat) + " " + logHeader);
+                WriteLine(System.DateTime.Now.ToString(datetimeFormat) + " " + logHeader, LogLevel.DEBUG);
             }
         }
 
@@ -111,7 +111,7 @@ namespace OuterWildsServer.Utils
             WriteFormattedLog(LogLevel.WARNING, text);
         }
 
-        private void WriteLine(string text, bool append = false)
+        private void WriteLine(string text, LogLevel level, bool append = false)
         {
             try
             {
@@ -119,7 +119,32 @@ namespace OuterWildsServer.Utils
                 {
                     return;
                 }
+
+
+                var currentColor = Console.ForegroundColor;
+                switch (level)
+                {
+                    case LogLevel.TRACE:
+                        Console.ForegroundColor = ConsoleColor.Cyan;
+                        break;
+                    case LogLevel.INFO:
+                        Console.ForegroundColor = ConsoleColor.White;
+                        break;
+                    case LogLevel.WARNING:
+                        Console.ForegroundColor = ConsoleColor.Yellow;
+                        break;
+                    case LogLevel.ERROR:
+                        Console.ForegroundColor = ConsoleColor.Red;
+                        break;
+                    case LogLevel.FATAL:
+                        Console.ForegroundColor = ConsoleColor.Magenta;
+                        break;
+                }
                 Console.WriteLine(text);
+                Console.ForegroundColor = currentColor;
+
+
+
                 lock (fileLock)
                 {
                     using (System.IO.StreamWriter writer = new System.IO.StreamWriter(logFilename, append, System.Text.Encoding.UTF8))
@@ -162,7 +187,7 @@ namespace OuterWildsServer.Utils
                     break;
             }
 
-            WriteLine(pretext + text, true);
+            WriteLine(pretext + text, level, true);
         }
 
         [System.Flags]
