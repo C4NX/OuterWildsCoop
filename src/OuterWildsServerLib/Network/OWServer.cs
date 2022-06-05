@@ -8,7 +8,8 @@ using System.Threading.Tasks;
 using OuterWildsServer.Network.Packets.Client;
 using OuterWildsServer.Network.Packets.Server;
 using OuterWildsServer.Network.Players;
-using OuterWildsServer.Utils;
+using OuterWildsServerLib.Utils;
+using OuterWildsServerLib.Utils.Logger;
 
 namespace OuterWildsServer.Network
 {
@@ -20,7 +21,7 @@ namespace OuterWildsServer.Network
         public const string LIDGREN_APP_IDENTIFIER = "OUTERWILDS";
         public const int PORT_DEFAULT = 14177;
         public const string SERVER_VERSION = "OWC 1.0";
-        public const string GAME_VERSION = "TODO: ADD GAME VERSION";
+        public const string GAME_VERSION = "1.1.10.47";
 
         private NetServer _server;
         private List<OwPlayer> _players;
@@ -31,7 +32,7 @@ namespace OuterWildsServer.Network
         /// <summary>
         /// Get if this server is loaded in Outer Wilds directly.
         /// </summary>
-        public static bool IsServerInGame => AppDomain.CurrentDomain.GetAssemblies().Any((e) => e.GetName().Name.Equals("MelonLoader", StringComparison.InvariantCultureIgnoreCase));
+        public static bool IsServerInGame { get; protected set; } = AppDomain.CurrentDomain.GetAssemblies().Any((e) => e.GetName().Name.Equals("MelonLoader", StringComparison.InvariantCultureIgnoreCase));
 
         /// <summary>
         /// Get if the server is running, more exactly its socket.
@@ -42,6 +43,8 @@ namespace OuterWildsServer.Network
         /// Get if the server is sleeping, message thread will wait a lot more.
         /// </summary>
         public bool IsSleeping => (DateTime.Now - _lastMessageTime).TotalSeconds > 10;
+
+        public int PlayerCount => _players.Count;
 
         private OWServer(ServerConfiguration configuration)
         {
@@ -127,6 +130,7 @@ namespace OuterWildsServer.Network
                     //Password is wrong sooo...
                     if (!string.IsNullOrWhiteSpace(_configuration.Password) && loginPacket.Password != _configuration.Password)
                     {
+                        ServerLog($"Attempt to connect from {netIncomingMessage.SenderEndPoint}, but wrong password was given.", true);
                         loginMessage = "Incorect password.";
                         isLoggedIn = false;
                     }
@@ -175,6 +179,24 @@ namespace OuterWildsServer.Network
         internal void PushStateMessage(NetIncomingMessage netIncomingMessage)
         {
             ServerLog($"State of {netIncomingMessage.SenderEndPoint} changed to {netIncomingMessage.SenderConnection?.Status}", true);
+
+
+            if(netIncomingMessage.SenderConnection?.Status == NetConnectionStatus.Disconnected)
+            {
+                OwPlayer player = null;
+                foreach (var item in GetPlayers())
+                {
+                    if(item.GetConnection() == netIncomingMessage.SenderConnection)
+                    {
+                        player = item;
+                        break;
+                    }
+                }
+
+                _players.Remove(player);
+
+                ServerLog($"Disconnected {player}.");
+            }
         }
 
         /// <summary>
@@ -227,6 +249,8 @@ namespace OuterWildsServer.Network
         /// <returns>The current password</returns>
         public string GetPassword() => _configuration.Password;
 
+        public IReadOnlyCollection<OwPlayer> GetPlayers() => _players.AsReadOnly();
+
         /// <summary>
         /// Method that is executed on the <see cref="ThreadPool"/>, and which serves as a message reading loop for the server.
         /// </summary>
@@ -252,18 +276,11 @@ namespace OuterWildsServer.Network
             }
         }
 
-        private void ServerLog(string message, bool trace)
+        private void ServerLog(string message, bool trace = false)
         {
-            if (_configuration.PrintLogs)
+            if (_configuration.PrintSimpleLogs)
             {
-                if (trace)
-                {
-                    SimpleLogger.Instance.Trace(message); 
-                }
-                else
-                {
-                    SimpleLogger.Instance.Info(message);
-                }
+                ServerLogger.Logger?.Log(trace ? LogLevel.TRACE : LogLevel.INFO, message);
             }
         }
     }

@@ -1,6 +1,7 @@
 ﻿using Newtonsoft.Json;
 using OuterWildsServer.Network;
-using OuterWildsServer.Utils;
+using OuterWildsServerLib.Utils;
+using OuterWildsServerLib.Utils.Logger;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -19,7 +20,7 @@ namespace OuterWildsServerLib
 
         public static void Main(string[] args)
         {
-            SimpleLogger.Instance.Info("Starting Server...");
+            ServerLogger.Logger.Info("Starting Server...");
 
             ServerConfiguration serverConfiguration = new ServerConfiguration();
 
@@ -30,11 +31,11 @@ namespace OuterWildsServerLib
             }
             catch (JsonException ex)
             {
-                SimpleLogger.Instance.Error($"Failed to load the server configuration : {ex.Message}");
+                ServerLogger.Logger.Error($"Failed to load the server configuration : {ex.Message}");
             }
             finally
             {
-                serverConfiguration.PrintLogs = true;
+                serverConfiguration.PrintSimpleLogs = true;
             }
 
             Instance = OWServer.CreateServer(serverConfiguration);
@@ -48,15 +49,15 @@ namespace OuterWildsServerLib
                 switch (ex.SocketErrorCode)
                 {
                     case SocketError.AddressAlreadyInUse:
-                        SimpleLogger.Instance.Warning($"You could not use the port '{Instance.GetLidgrenServer().Configuration.Port}', because it is already in use");
+                        ServerLogger.Logger.Warn($"You could not use the port '{Instance.GetLidgrenServer().Configuration.Port}', because it is already in use");
                         break;
                 }
-                SimpleLogger.Instance.Fatal($"Error while starting the server: {ex.Message}");
+                ServerLogger.Logger.Fatal($"Error while starting the server: {ex.Message}");
                 return;
             }
 
             if (Instance.IsRunning)
-                SimpleLogger.Instance.Info($"Server is running at {Instance.GetLidgrenServer().Configuration.LocalAddress}:{Instance.GetLidgrenServer().Port}");
+                ServerLogger.Logger.Info($"Server is running at {Instance.GetLidgrenServer().Configuration.LocalAddress}:{Instance.GetLidgrenServer().Port}");
 
             while (Instance.IsRunning)
             {
@@ -79,25 +80,25 @@ namespace OuterWildsServerLib
                             Console.Clear();
                             break;
                         case "STATS":
-                            SimpleLogger.Instance.Info(GetServerInfoString());
+                            ServerLogger.Logger.Info(GetServerInfoString());
                             break;
                         case "MOTD":
                             var newMotd = cmdargs.ElementAtOrDefault(1);
                             if (newMotd == null)
                             {
-                                SimpleLogger.Instance.Info($"MOTD is '{Instance.GetMOTD()}'");
+                                ServerLogger.Logger.Info($"MOTD is '{Instance.GetMOTD()}'");
                             }
                             else
                             {
                                 Instance.SetMOTD(newMotd);
-                                SimpleLogger.Instance.Info($"MOTD was set to '{Instance.GetMOTD()}'");
+                                ServerLogger.Logger.Info($"MOTD was set to '{Instance.GetMOTD()}'");
                             }
                             break;
                         case "PASSWORD":
                             var newPassword = cmdargs.ElementAtOrDefault(1);
                             if (newPassword == null)
                             {
-                                SimpleLogger.Instance.Info($"Password is '{Instance.GetPassword() ?? "<null>"}'");
+                                ServerLogger.Logger.Info($"Password is '{Instance.GetPassword() ?? "<null>"}'");
                             }
                             else
                             {
@@ -105,11 +106,27 @@ namespace OuterWildsServerLib
                                 newPassword = (passwordUpperTrimed == "NULL" || passwordUpperTrimed == "OFF" || passwordUpperTrimed == "NO") ? null : newPassword;
 
                                 Instance.SetPassword(newPassword);
-                                SimpleLogger.Instance.Info($"Password was set to '{Instance.GetPassword() ?? "<null>"}'");
+                                ServerLogger.Logger.Info($"Password was set to '{Instance.GetPassword() ?? "<null>"}'");
+                            }
+                            break;
+                        case "PLAYERS":
+                            if (Instance.PlayerCount > 0)
+                            {
+                                StringBuilder sbPlayers = new StringBuilder();
+                                sbPlayers.AppendLine();
+                                foreach (var item in Instance.GetPlayers())
+                                {
+                                    sbPlayers.AppendLine($"{item.GetGuid()} ({item.GetUsername()})");
+                                }
+                                ServerLogger.Logger.Info(sbPlayers.ToString());
+                            }
+                            else
+                            {
+                                ServerLogger.Logger.Info("No players are online.");
                             }
                             break;
                         default:
-                            SimpleLogger.Instance.Info($"Command '{cmdname}' not found.");
+                            ServerLogger.Logger.Info($"Command '{cmdname}' not found.");
                             break;
                     }
                 }

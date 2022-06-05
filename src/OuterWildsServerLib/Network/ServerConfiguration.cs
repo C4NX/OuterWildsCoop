@@ -14,22 +14,20 @@ namespace OuterWildsServer.Network
         public const string DEFAULT_MOTD = "A wilds coop server.";
 
         [JsonProperty("port")]
-        private int _port;
-
-        [JsonIgnore]
-        public int Port => _port;
+        public int Port { get; set; }
 
         [JsonProperty("motd")]
         public string MOTD { get; set; }
+
         [JsonProperty("password")]
         public string Password { get; set; }
 
         [JsonIgnore]
-        public bool PrintLogs { get; set; } = false;
+        public bool PrintSimpleLogs { get; set; } = false;
 
-        public ServerConfiguration(int port = OWServer.PORT_DEFAULT)
+        public ServerConfiguration()
         {
-            _port = port;
+            Port = OWServer.PORT_DEFAULT;
             MOTD = DEFAULT_MOTD;
             Password = null;
         }
@@ -42,7 +40,7 @@ namespace OuterWildsServer.Network
                 NetworkThreadName = "Server-Network",
                 ConnectionTimeout = 10,
                 PingInterval = 5,
-                Port = _port,
+                Port = Port,
             };
         }
 

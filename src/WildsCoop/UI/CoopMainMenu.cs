@@ -1,4 +1,5 @@
 ﻿using MelonLoader;
+using OuterWildsServer.Network;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -22,11 +23,13 @@ namespace WildsCoop.UI
         /// </summary>
         public bool ErrorMessageVisible { get; set; }
 
-        private string _ip = "localhost";
-        private string _password = string.Empty;
-        private string _port = "5050";
+        private string login_ip = "localhost";
+        private string login_password = string.Empty;
+        private string login_port = OWServer.PORT_DEFAULT.ToString();
 
-        private bool _isConnecting = false;
+        private string host_ip = "localhost";
+        private string host_password = string.Empty;
+        private string host_port = OWServer.PORT_DEFAULT.ToString();
 
         private string _error_message;
 
@@ -38,62 +41,49 @@ namespace WildsCoop.UI
                 GUI.Window(0, new Rect((int)(Screen.width / 1.5 - (500 / 2)), Screen.height / 2 - (500 / 2), 500, 300), (e) =>
                    {
                        GUI.Label(new Rect(5, 15, 490, 20), "IP :");
-                       _ip = GUI.TextField(new Rect(5,30, 490, 20), _ip);
+                       login_ip = GUI.TextField(new Rect(5,30, 490, 20), login_ip);
                        GUI.Label(new Rect(5, 60, 490, 20), "Port :");
-                       _port = GUI.TextField(new Rect(5, 80, 490, 20), _port);
+                       login_port = GUI.TextField(new Rect(5, 80, 490, 20), login_port);
                        GUI.Label(new Rect(5, 100, 490, 20), "Password :");
-                       _password = GUI.TextField(new Rect(5, 120, 490, 20), _password);
+                       login_password = GUI.TextField(new Rect(5, 120, 490, 20), login_password);
 
-                       if(GUI.Button(new Rect(5, 245, 495, 50), _isConnecting ? "Cancel Join" : "Join"))
+                       if(GUI.Button(new Rect(5, 245, 495, 50), "Join") && !ErrorMessageVisible)
                        {
-                           if (!_isConnecting)
-                           {
-                               var connectionInformation = GetServerConnectionInformation(true);
-
-
-
-                               if (connectionInformation != null)
-                               {
-                                   Task.Factory.StartNew(async () =>
+                           int port = 0;
+                           if (int.TryParse(login_port, out port))
+                               WildsCoopMod.Instance.JoinServer(
+                                   login_ip, 
+                                   port, 
+                                   string.IsNullOrWhiteSpace(login_password) ? null : login_password,
+                                   (client) => //On Success
                                    {
-                                       _isConnecting = true;
-                                       /*if (await CoopClient.ConnectAsync(connectionInformation))
-                                       {
-                                           SetShowErrorMessage($"WIP: host from {connectionInformation.WebSocketUri} with password '{connectionInformation.Password ?? "<null>"}'");
-                                           _isConnecting = false;
-                                           HostJoinVisible = false;
-                                       }
-                                       else
-                                       {
-                                           SetShowErrorMessage($"Connection failed");
-                                           _isConnecting = false;
-                                       }*/
+                                       HostJoinVisible = false;
+                                   }, 
+                                   (client, loginResult) => //On Fail
+                                   {
+                                       SetShowErrorMessage($"Login failed : {loginResult.Message}");
                                    });
-                               }
-                           }
                            else
-                           {
-                               //CoopClient.CancelConnect();
-                           }
+                               SetShowErrorMessage("Invalid port.");
                        }
                    }, "Join Game");
 
                 GUI.Window(1, new Rect((int)(Screen.width / 1.5 - (500 / 2)), (Screen.height / 2 - (500 / 2) + 350), 500, 300), (e) =>
                 {
                     GUI.Label(new Rect(5, 15, 490, 20), "IP :");
-                    _ip = GUI.TextField(new Rect(5, 30, 490, 20), _ip);
+                    host_ip = GUI.TextField(new Rect(5, 30, 490, 20), host_ip);
                     GUI.Label(new Rect(5, 60, 490, 20), "Port :");
-                    _port = GUI.TextField(new Rect(5, 80, 490, 20), _port);
+                    host_port = GUI.TextField(new Rect(5, 80, 490, 20), host_port);
                     GUI.Label(new Rect(5, 100, 490, 20), "Password :");
-                    _password = GUI.TextField(new Rect(5, 120, 490, 20), _password);
+                    host_password = GUI.TextField(new Rect(5, 120, 490, 20), host_password);
 
                     if(GUI.Button(new Rect(5, 245, 495, 50), "Host") && !ErrorMessageVisible)
                     {
-                        var connectionInformation = GetServerConnectionInformation(true);
-                        if (connectionInformation != null)
-                        {
-                            SetShowErrorMessage($"WIP: host from {connectionInformation.WebSocketUri} with password '{connectionInformation.Password ?? "<null>"}'");
-                        }
+                        int port = 0;
+                        if (int.TryParse(host_port, out port))
+                            WildsCoopMod.Instance.StartNewServer(host_ip, port, string.IsNullOrWhiteSpace(host_password) ? null : host_password);
+                        else
+                            SetShowErrorMessage("Invalid port.");
 
                     }
                 }, "Host Game");
@@ -120,83 +110,6 @@ namespace WildsCoop.UI
         {
             ErrorMessageVisible = true;
             _error_message = message;
-        }
-
-        private bool TryParseIpFTW(string value, out IPAddress ipAddress)
-        {
-            if(value.Trim().Equals("localhost", StringComparison.InvariantCultureIgnoreCase))
-            {
-                ipAddress = IPAddress.Parse("127.0.0.1");
-                return true;
-            }
-            return IPAddress.TryParse(_ip, out ipAddress);
-        }
-
-        public ServerConnectionInformation GetServerConnectionInformation(bool showError = true)
-        {
-            Uri webSocketUri = null;
-            string password = string.IsNullOrWhiteSpace(_password) ? null : _password;
-
-            IPAddress ipAddress = null;
-            int port = 0;
-            if (TryParseIpFTW(_ip, out ipAddress)) // may an IP (with localhost check) ?
-            {
-                if (!int.TryParse(_port, out port))
-                {
-                    if (showError)
-                        SetShowErrorMessage("You must enter a valid port number !");
-                    return null;
-                }
-
-                webSocketUri = new Uri($"ws{(false/*TODO: Add checkbox for secure*/ ? "s" : string.Empty)}://{ipAddress}:{port}/ws");
-                MelonDebug.Msg($"Created server connection uri '{webSocketUri}'");
-            }
-            else // may a full websocket uri ?
-            {
-                if (_ip.StartsWith("ws://", StringComparison.InvariantCultureIgnoreCase) || _ip.StartsWith("wss://", StringComparison.InvariantCultureIgnoreCase))
-                {
-                    webSocketUri = new Uri(_ip);
-                    MelonDebug.Msg($"Used full server connection uri '{webSocketUri}'");
-                }
-                else
-                {
-                    if (showError)
-                        SetShowErrorMessage("You must enter a valid IP or a valid websocket uri");
-                    return null;
-                }
-            }
-
-            /*if (!IPAddress.TryParse(_ip, out ip))
-            {
-                try
-                {
-                    var firstDnsAddress = Dns.GetHostAddresses(_ip).FirstOrDefault();
-                    if (firstDnsAddress == null)
-                    {
-                        if(showError) 
-                            SetShowErrorMessage($"Host not found '{_ip}'");
-                        return null;
-                    }
-                    else
-                    {
-                        ip = firstDnsAddress;
-                    }
-                }
-                catch (SocketException)
-                {
-                    if (showError)
-                        SetShowErrorMessage($"Host not found '{_ip}'");
-                    return null;
-                }
-            }
-            if (!int.TryParse(_port, out port))
-            {
-                if (showError)
-                    SetShowErrorMessage("You must enter a valid port number !");
-                return null;
-            }*/
-
-            return new ServerConnectionInformation(webSocketUri, password);
         }
     }
 }

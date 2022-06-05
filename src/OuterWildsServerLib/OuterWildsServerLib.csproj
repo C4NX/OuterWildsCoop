@@ -58,7 +58,11 @@
     <Compile Include="Network\ServerConfiguration.cs" />
     <Compile Include="ProgramMain.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Utils\SimpleLogger.cs" />
+    <Compile Include="Utils\Logger\ConsoleLogWriter.cs" />
+    <Compile Include="Utils\Logger\FileLogWriter.cs" />
+    <Compile Include="Utils\Logger\ILogWriter.cs" />
+    <Compile Include="Utils\Logger\LogLevel.cs" />
+    <Compile Include="Utils\Logger\ServerLogger.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

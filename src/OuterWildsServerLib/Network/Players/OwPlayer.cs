@@ -26,5 +26,9 @@ namespace OuterWildsServer.Network.Players
         public Guid GetGuid() => _id;
 
         public string GetUsername() => _username;
+
+        public NetConnection GetConnection() => _connection;
+
+        public override string ToString() => $"{_id} ({_username})";
     }
 }

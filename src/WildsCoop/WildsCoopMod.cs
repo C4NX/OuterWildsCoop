@@ -1,6 +1,7 @@
 ﻿using HarmonyLib;
 using MelonLoader;
 using OuterWildsServer.Network;
+using OuterWildsServer.Network.Packets.Server;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -44,19 +45,7 @@ namespace WildsCoop
 
         public override void OnApplicationStart()
         {
-            LoggerInstance.Msg("Wilds Mods Loaded !");
-
-            /*var owServer = OWServer.CreateServer(new ServerConfiguration { MOTD = "Simple Outer wilds server.", Password="Test" });
-            owServer.Start();*/
-
-            MelonDebug.Msg($"DEBUG IS GAME: {OWServer.IsServerInGame}");
-
-            var owClient = new OWClient();
-            var result = owClient.ConnectTo("127.0.0.1", timeoutMillisecond: 5000);
-            if (!result)
-                MelonDebug.Msg("Failed to connect to 127.0.0.1");
-            owClient.RequestServerInformation(true);
-            owClient.RequestLogin("C4NX");
+            LoggerInstance.Msg("The unofficial multiplayer mod for OuterWilds is now active !");
 
             base.OnApplicationStart();
         }
@@ -71,6 +60,31 @@ namespace WildsCoop
 
             LoggerInstance.Msg($"Scene was loaded {buildIndex} '{sceneName}'");
             base.OnSceneWasLoaded(buildIndex, sceneName);
+        }
+
+        public void StartNewServer(string hostname, int port, string password)
+        {
+            var owServer = OWServer.CreateServer(new ServerConfiguration() { Port = port, PrintSimpleLogs = false, Password = password });
+            owServer.Start();
+        }
+
+        private OWClient currentClient;
+
+        public void JoinServer(string hostname, int port, string password, ClientEventHandler onLogged, ClientFromPacketEventHandler<LoginResultPacket> onLoginFail)
+        {
+            if (currentClient != null && currentClient.IsLogged)
+                return;
+
+            currentClient = new OWClient();
+            MelonDebug.Msg($"Attempt to connect to {hostname}:{port}");
+            if (!currentClient.ConnectTo(hostname, port, 10000))
+                currentClient = null; //TODO: ?
+            else
+            {
+                currentClient.OnLogged += onLogged;
+                currentClient.OnConnectFail = onLoginFail;
+                currentClient.RequestLogin("C4NX", password);
+            }
         }
 
         /// <summary>

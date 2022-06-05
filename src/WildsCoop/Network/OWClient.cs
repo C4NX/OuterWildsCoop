@@ -13,11 +13,24 @@ using OuterWildsServer.Network;
 
 namespace WildsCoop.Network
 {
+
+    /// <summary>
+    /// An event coming from a <see cref="OWClient"/>
+    /// </summary>
+    public delegate void ClientEventHandler(OWClient client);
+
+    /// <summary>
+    /// An event coming from a <see cref="OWClient"/> but is linked to a <see cref="INetPacket"/>
+    /// </summary>
+    public delegate void ClientFromPacketEventHandler<T>(OWClient client, T packetValue) where T : INetPacket;
+
     /// <summary>
     /// A class that represents an OuterWilds client, which can connect to a OuterWilds Server.
     /// </summary>
     public class OWClient : IDisposable
     {
+        #region Fields
+
         private NetClient _client;
         private NetConnection _serverConnection;
         private NetPacketsProvider _packetProvider;
@@ -26,6 +39,10 @@ namespace WildsCoop.Network
         private bool _isLoggedIn;
         private Guid _playerId;
         private string _username;
+
+        #endregion
+
+        #region GetSet
 
         /// <summary>
         /// Get if the client is connected to the server and is not disposed.
@@ -42,7 +59,6 @@ namespace WildsCoop.Network
         /// </summary>
         public bool IsSleeping => (DateTime.Now - _lastMessageTime).TotalSeconds > 10;
 
-
         /// <summary>
         /// Get if the server information was received, to get the information needed, ask him nicely <see cref="RequestServerInformation(bool, string)"/>
         /// </summary>
@@ -51,6 +67,32 @@ namespace WildsCoop.Network
         /// Get the game version given by the server or null.
         /// </summary>
         public string ServerGameVersion => _serverInformation.GameVersion;
+
+        /// <summary>
+        /// Get if the client is connected and logged in to the server.
+        /// </summary>
+        public bool IsLogged => IsConnected && _isLoggedIn;
+
+        #endregion
+
+        #region Events
+
+        /// <summary>
+        /// An event that can have several handlers, it is used to inform that the client is well logged on the server.
+        /// To check if the client is well logged, please use <see cref="IsLogged"/>.
+        /// </summary>
+        public event ClientEventHandler OnLogged;
+
+        /// <summary>
+        /// A unique event, it notifies that the connection is not possible. 
+        /// It is also linked to a <see cref="LoginResultPacket"/> because it is also 
+        /// in charge of notifying that the login has been refused by the server.
+        /// To identify both usages, the packet information (<see cref="LoginResultPacket"/>) is not specified if the connection 
+        /// was not made successfully with the server.
+        /// </summary>
+        public ClientFromPacketEventHandler<LoginResultPacket> OnConnectFail;
+
+        #endregion
 
         public OWClient()
         {
@@ -88,7 +130,6 @@ namespace WildsCoop.Network
 
             Stopwatch timeoutStopwatch = Stopwatch.StartNew();
 
-            ClientLog($"Before while connection is : {_client.ConnectionStatus}");
             while (_client.ConnectionStatus != NetConnectionStatus.Connected)
             {
                 Thread.Sleep(500);
@@ -98,6 +139,9 @@ namespace WildsCoop.Network
             timeoutStopwatch.Stop();
 
             ClientLog($"DEBUG: IsConnected: {IsConnected}, Connection Status: {_client.ConnectionStatus}");
+
+            if (!IsConnected)
+                OnConnectFail?.Invoke(this, null);
 
             return IsConnected;
         }
@@ -147,10 +191,13 @@ namespace WildsCoop.Network
                     _username = loginResult.Username;
                     _isLoggedIn = true;
                     ClientLog($"Logged to the server ID={_playerId} USERNAME={_username}");
+
+                    OnLogged?.Invoke(this);
                 }
                 else
                 {
                     ClientLog($"Login to the server failed: {loginResult.Message}");
+                    OnConnectFail?.Invoke(this, loginResult);
                 }
                 ClientLog($"{_serverInformation} IP={_serverConnection.RemoteEndPoint}");
             }

@@ -333,7 +333,6 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Network\OWClient.cs" />
-    <Compile Include="Network\ServerConnectionInformation.cs" />
     <Compile Include="UI\CoopMainMenu.cs" />
     <Compile Include="Patchs\FadeInMenuOptions.cs" />
     <Compile Include="OWUtilities.cs" />
