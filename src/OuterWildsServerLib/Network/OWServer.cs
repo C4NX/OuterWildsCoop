@@ -10,6 +10,7 @@ using OuterWildsServer.Network.Packets.Server;
 using OuterWildsServer.Network.Players;
 using OuterWildsServerLib.Utils;
 using OuterWildsServerLib.Utils.Logger;
+using System.IO;
 
 namespace OuterWildsServer.Network
 {
@@ -110,13 +111,16 @@ namespace OuterWildsServer.Network
 
             if (packetReceived != null)
             {
+                ServerLog($"Packet is {packetReceived.GetType().FullName} ({packetId})", true);
+
                 if (packetReceived is ServerInformationRequestPacket)
                 {
                     //Send information
-                    ServerRespond(netIncomingMessage.SenderConnection, new ServerInformationPacket() { 
+                    ServerSend(netIncomingMessage.SenderConnection, new ServerInformationPacket() { 
                         IsDisconnectRequest = ((ServerInformationRequestPacket)packetReceived).WantToDisconnectAfter, 
                         MOTD = _configuration.MOTD, GameVersion=GAME_VERSION
                     });
+                    return;
                 }
 
                 if (packetReceived is LoginRequestPacket)
@@ -145,7 +149,7 @@ namespace OuterWildsServer.Network
                         ServerLog($"New Player as joined {newPlayer.GetUsername()}({newPlayer.GetGuid()})", false);
 
                         //Send OK, with id,username,message.
-                        ServerRespond(netIncomingMessage.SenderConnection, new LoginResultPacket
+                        ServerSend(netIncomingMessage.SenderConnection, new LoginResultPacket
                         {
                             IsLoggedIn = true,
                             UserId = newPlayer.GetGuid(),
@@ -156,15 +160,15 @@ namespace OuterWildsServer.Network
                     else
                     {
                         //Send failed, with message.
-                        ServerRespond(netIncomingMessage.SenderConnection, new LoginResultPacket
+                        ServerSend(netIncomingMessage.SenderConnection, new LoginResultPacket
                         {
                             IsLoggedIn = false,
                             Message = loginMessage
                         });
                     }
-                }
 
-                ServerLog($"Packet is {packetReceived.GetType().FullName} ({packetId})", true);
+                    return;
+                }
             }
             else
             {
@@ -193,24 +197,64 @@ namespace OuterWildsServer.Network
                     }
                 }
 
-                _players.Remove(player);
-
-                ServerLog($"Disconnected {player}.");
+                if (_players.Remove(player))
+                {
+                    ServerLog($"Disconnected {player}.");
+                }
             }
         }
 
+        #region Sends
+
         /// <summary>
-        /// Responds to a <see cref="NetConnection"/> with a <see cref="INetPacket"/>.
+        /// Send a <see cref="INetPacket"/> to a <see cref="NetConnection"/>.
         /// </summary>
         /// <param name="netConnection">The <see cref="NetConnection"/></param>
         /// <param name="netPacket">The <see cref="INetPacket"/></param>
         /// <exception cref="ArgumentException">If this packet is not registered in the <see cref="NetPacketsProvider"/></exception>
         /// <returns>If the message was <see cref="NetSendResult.Sent"/> or <see cref="NetSendResult.Queued"/></returns>
-        public bool ServerRespond(NetConnection netConnection, INetPacket netPacket)
+        public bool ServerSend(NetConnection netConnection, INetPacket netPacket)
         {
             var sendResult = netConnection.SendMessage(_packetProvider.Deserialize(netPacket), NetDeliveryMethod.ReliableOrdered, 0);
             return sendResult == NetSendResult.Sent || sendResult == NetSendResult.Queued;
         }
+
+        /// <summary>
+        /// Send a <see cref="INetPacket"/> to a <see cref="OwPlayer"/>
+        /// </summary>
+        /// <param name="player"></param>
+        /// <param name="netPacket"></param>
+        /// <returns></returns>
+        public bool ServerSend(OwPlayer player, INetPacket netPacket)
+            => ServerSend(player.GetConnection(), netPacket);
+
+        /// <summary>
+        /// Broadcast a <see cref="INetPacket"/> to all players.
+        /// </summary>
+        /// <param name="netPacket">The packet to send</param>
+        public void ServerBroadcast(INetPacket netPacket)
+        {
+            var outMessage = _packetProvider.Deserialize(netPacket);
+            foreach (var item in GetPlayers())
+                item.GetConnection().SendMessage(outMessage, NetDeliveryMethod.ReliableOrdered, 0);
+        }
+
+        /// <summary>
+        /// Broadcast a <see cref="INetPacket"/> to all players which are not in the ingores parameter.
+        /// </summary>
+        /// <param name="netPacket">The packet to send</param>
+        /// <param name="ignores">Players who are ignored</param>
+        public void ServerBroadcast(INetPacket netPacket, OwPlayer[] ignores)
+        {
+            var outMessage = _packetProvider.Deserialize(netPacket);
+            foreach (var item in GetPlayers())
+                if (!ignores.Contains(item))
+                {
+                    item.GetConnection().SendMessage(outMessage, NetDeliveryMethod.ReliableOrdered, 0);
+                }
+        }
+
+        #endregion
 
         /// <summary>
         /// Get the current <see cref="NetServer"/> used.
@@ -276,12 +320,7 @@ namespace OuterWildsServer.Network
             }
         }
 
-        private void ServerLog(string message, bool trace = false)
-        {
-            if (_configuration.PrintSimpleLogs)
-            {
-                ServerLogger.Logger?.Log(trace ? LogLevel.TRACE : LogLevel.INFO, message);
-            }
-        }
+        private void ServerLog(string message, bool trace = false) 
+            => ServerLogger.Logger?.Log(trace ? LogLevel.TRACE : LogLevel.INFO, message);
     }
 }

@@ -33,10 +33,6 @@ namespace OuterWildsServerLib
             {
                 ServerLogger.Logger.Error($"Failed to load the server configuration : {ex.Message}");
             }
-            finally
-            {
-                serverConfiguration.PrintSimpleLogs = true;
-            }
 
             Instance = OWServer.CreateServer(serverConfiguration);
 

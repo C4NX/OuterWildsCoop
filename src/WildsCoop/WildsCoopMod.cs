@@ -2,6 +2,7 @@
 using MelonLoader;
 using OuterWildsServer.Network;
 using OuterWildsServer.Network.Packets.Server;
+using OuterWildsServerLib.Utils.Logger;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -12,6 +13,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using WildsCoop.Network;
 using WildsCoop.UI;
+using WildsCoop.Utils;
 
 namespace WildsCoop
 {
@@ -45,6 +47,8 @@ namespace WildsCoop
 
         public override void OnApplicationStart()
         {
+            ServerLogger.Logger?.AddWriter(new MelonLogWriter());
+
             LoggerInstance.Msg("The unofficial multiplayer mod for OuterWilds is now active !");
 
             base.OnApplicationStart();
@@ -64,7 +68,7 @@ namespace WildsCoop
 
         public void StartNewServer(string hostname, int port, string password)
         {
-            var owServer = OWServer.CreateServer(new ServerConfiguration() { Port = port, PrintSimpleLogs = false, Password = password });
+            var owServer = OWServer.CreateServer(new ServerConfiguration() { Port = port, Password = password });
             owServer.Start();
         }
 
@@ -78,11 +82,13 @@ namespace WildsCoop
             currentClient = new OWClient();
             MelonDebug.Msg($"Attempt to connect to {hostname}:{port}");
             if (!currentClient.ConnectTo(hostname, port, 10000))
-                currentClient = null; //TODO: ?
+                currentClient = null;
             else
             {
                 currentClient.OnLogged += onLogged;
                 currentClient.OnConnectFail = onLoginFail;
+
+
                 currentClient.RequestLogin("C4NX", password);
             }
         }

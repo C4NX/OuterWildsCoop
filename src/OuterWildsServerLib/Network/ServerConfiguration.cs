@@ -22,9 +22,6 @@ namespace OuterWildsServer.Network
         [JsonProperty("password")]
         public string Password { get; set; }
 
-        [JsonIgnore]
-        public bool PrintSimpleLogs { get; set; } = false;
-
         public ServerConfiguration()
         {
             Port = OWServer.PORT_DEFAULT;

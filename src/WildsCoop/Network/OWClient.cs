@@ -10,6 +10,8 @@ using System.Threading.Tasks;
 using OuterWildsServer.Network.Packets.Client;
 using OuterWildsServer.Network.Packets.Server;
 using OuterWildsServer.Network;
+using System.Collections;
+using System.IO;
 
 namespace WildsCoop.Network
 {
@@ -247,7 +249,15 @@ namespace WildsCoop.Network
             }
         }
 
-        private static void ClientLog(string message) => MelonDebug.Msg($"[CLIENT] {message}");
+        /// <summary>
+        /// Print a client log message, but uses an obsolete version 
+        /// for logging due to the following <see cref="MelonDebug"/> not working in a different thread.
+        /// </summary>
+        /// <param name="message"></param>
+        private static void ClientLog(string message)
+        {
+            MelonLogger.Log($"[CLIENT/{Thread.CurrentThread.Name ?? Thread.CurrentThread.ManagedThreadId.ToString()}] {message}");
+        }
 
         private static void LogPacketProvider(NetPacketsProvider packetsProvider)
         {

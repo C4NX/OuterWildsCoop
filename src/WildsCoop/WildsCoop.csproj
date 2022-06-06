@@ -336,10 +336,14 @@
     <Compile Include="UI\CoopMainMenu.cs" />
     <Compile Include="Patchs\FadeInMenuOptions.cs" />
     <Compile Include="OWUtilities.cs" />
+    <Compile Include="Utils\MelonLogWriter.cs" />
     <Compile Include="WildsCoopMod.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="..\.editorconfig">
+      <Link>.editorconfig</Link>
+    </None>
     <None Include="app.config" />
     <None Include="packages.config" />
   </ItemGroup>
