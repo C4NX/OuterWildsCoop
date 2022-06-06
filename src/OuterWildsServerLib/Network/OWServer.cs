@@ -125,10 +125,9 @@ namespace OuterWildsServer.Network
 
                 if (packetReceived is LoginRequestPacket)
                 {
-                    //TODO: Add password checks & more checks & more checks....
                     var loginPacket = (LoginRequestPacket)packetReceived;
 
-                    string loginMessage = "Welcome Home !";
+                    string loginMessage = string.Empty;
                     bool isLoggedIn = true;
 
                     //Password is wrong sooo...
@@ -142,7 +141,7 @@ namespace OuterWildsServer.Network
                     if (isLoggedIn)
                     {
                         //Create the new player and add it.
-                        var newPlayer = new OwPlayer(Guid.NewGuid(), netIncomingMessage.SenderConnection, loginPacket.Username);
+                        var newPlayer = new OwPlayer(Guid.NewGuid(), netIncomingMessage.SenderConnection, loginPacket.Username.Trim());
                         _players.Add(newPlayer);
 
 
