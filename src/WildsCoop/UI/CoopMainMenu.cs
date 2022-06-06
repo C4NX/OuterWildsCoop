@@ -26,8 +26,9 @@ namespace WildsCoop.UI
         private string login_ip = "localhost";
         private string login_password = string.Empty;
         private string login_port = OWServer.PORT_DEFAULT.ToString();
+        private string login_username = string.Empty;
 
-        private string host_ip = "localhost";
+        private string host_username = string.Empty;
         private string host_password = string.Empty;
         private string host_port = OWServer.PORT_DEFAULT.ToString();
 
@@ -41,13 +42,15 @@ namespace WildsCoop.UI
                 GUI.Window(0, new Rect((int)(Screen.width / 1.5 - (500 / 2)), Screen.height / 2 - (500 / 2), 500, 300), (e) =>
                    {
                        GUI.Label(new Rect(5, 15, 490, 20), "IP :");
-                       login_ip = GUI.TextField(new Rect(5,30, 490, 20), login_ip);
-                       GUI.Label(new Rect(5, 60, 490, 20), "Port :");
-                       login_port = GUI.TextField(new Rect(5, 80, 490, 20), login_port);
-                       GUI.Label(new Rect(5, 100, 490, 20), "Password :");
-                       login_password = GUI.TextField(new Rect(5, 120, 490, 20), login_password);
+                       login_ip = GUI.TextField(new Rect(5,35, 490, 20), login_ip);
+                       GUI.Label(new Rect(5, 55, 490, 20), "Port :");
+                       login_port = GUI.TextField(new Rect(5, 75, 490, 20), login_port);
+                       GUI.Label(new Rect(5, 95, 490, 20), "Password :");
+                       login_password = GUI.TextField(new Rect(5, 115, 490, 20), login_password);
+                       GUI.Label(new Rect(5, 135, 490, 20), "Username :");
+                       login_username = GUI.TextField(new Rect(5, 155, 490, 20), login_username);
 
-                       if(GUI.Button(new Rect(5, 245, 495, 50), "Join") && !ErrorMessageVisible)
+                       if (GUI.Button(new Rect(5, 245, 495, 50), "Join") && !ErrorMessageVisible)
                        {
                            int port = 0;
                            if (int.TryParse(login_port, out port))
@@ -55,8 +58,10 @@ namespace WildsCoop.UI
                                    login_ip, 
                                    port, 
                                    string.IsNullOrWhiteSpace(login_password) ? null : login_password,
+                                   login_username,
                                    (client) => //On Success
                                    {
+                                       //TODO: Add Join World, sync, etc....
                                        HostJoinVisible = false;
                                    }, 
                                    (client, loginResult) => //On Fail
@@ -70,18 +75,18 @@ namespace WildsCoop.UI
 
                 GUI.Window(1, new Rect((int)(Screen.width / 1.5 - (500 / 2)), (Screen.height / 2 - (500 / 2) + 350), 500, 300), (e) =>
                 {
-                    GUI.Label(new Rect(5, 15, 490, 20), "IP :");
-                    host_ip = GUI.TextField(new Rect(5, 30, 490, 20), host_ip);
-                    GUI.Label(new Rect(5, 60, 490, 20), "Port :");
-                    host_port = GUI.TextField(new Rect(5, 80, 490, 20), host_port);
-                    GUI.Label(new Rect(5, 100, 490, 20), "Password :");
-                    host_password = GUI.TextField(new Rect(5, 120, 490, 20), host_password);
+                    GUI.Label(new Rect(5, 15, 490, 20), "Username :");
+                    host_username = GUI.TextField(new Rect(5, 35, 490, 20), host_username);
+                    GUI.Label(new Rect(5, 55, 490, 20), "Port :");
+                    host_port = GUI.TextField(new Rect(5, 75, 490, 20), host_port);
+                    GUI.Label(new Rect(5, 95, 490, 20), "Password :");
+                    host_password = GUI.TextField(new Rect(5, 115, 490, 20), host_password);
 
                     if(GUI.Button(new Rect(5, 245, 495, 50), "Host") && !ErrorMessageVisible)
                     {
                         int port = 0;
                         if (int.TryParse(host_port, out port))
-                            WildsCoopMod.Instance.StartNewServer(host_ip, port, string.IsNullOrWhiteSpace(host_password) ? null : host_password);
+                            WildsCoopMod.Instance.StartNewServer(port, string.IsNullOrWhiteSpace(host_password) ? null : host_password);
                         else
                             SetShowErrorMessage("Invalid port.");
 

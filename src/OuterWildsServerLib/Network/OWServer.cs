@@ -138,6 +138,14 @@ namespace OuterWildsServer.Network
                         isLoggedIn = false;
                     }
 
+                    //Username is wrong soo....
+                    if (string.IsNullOrWhiteSpace(loginPacket.Username))
+                    {
+                        ServerLog($"Attempt to connect from {netIncomingMessage.SenderEndPoint}, but bad username was given.", true);
+                        loginMessage = "Invalid username.";
+                        isLoggedIn = false;
+                    }
+
                     if (isLoggedIn)
                     {
                         //Create the new player and add it.

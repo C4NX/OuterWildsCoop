@@ -66,7 +66,7 @@ namespace WildsCoop
             base.OnSceneWasLoaded(buildIndex, sceneName);
         }
 
-        public void StartNewServer(string hostname, int port, string password)
+        public void StartNewServer(int port, string password)
         {
             var owServer = OWServer.CreateServer(new ServerConfiguration() { Port = port, Password = password });
             owServer.Start();
@@ -74,7 +74,7 @@ namespace WildsCoop
 
         private OWClient currentClient;
 
-        public void JoinServer(string hostname, int port, string password, ClientEventHandler onLogged, ClientFromPacketEventHandler<LoginResultPacket> onLoginFail)
+        public void JoinServer(string hostname, int port, string password, string username, ClientEventHandler onLogged, ClientFromPacketEventHandler<LoginResultPacket> onLoginFail)
         {
             if (currentClient != null && currentClient.IsLogged)
                 return;
@@ -89,7 +89,7 @@ namespace WildsCoop
                 currentClient.OnConnectFail = onLoginFail;
 
 
-                currentClient.RequestLogin("C4NX", password);
+                currentClient.RequestLogin(username, password);
             }
         }
 
