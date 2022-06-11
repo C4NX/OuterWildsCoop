@@ -54,6 +54,7 @@
     <Compile Include="Network\Packets\Client\ServerInformationRequestPacket.cs" />
     <Compile Include="Network\Packets\Server\LoginResultPacket.cs" />
     <Compile Include="Network\Packets\Server\ServerInformationPacket.cs" />
+    <Compile Include="Network\Packets\Server\SyncResultPacket.cs" />
     <Compile Include="Network\Players\OwPlayer.cs" />
     <Compile Include="Network\ServerConfiguration.cs" />
     <Compile Include="ProgramMain.cs" />

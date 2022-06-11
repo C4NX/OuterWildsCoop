@@ -9,32 +9,39 @@ using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
 using WildsCoop.Network;
+using WildsCoop.Patchs;
 
 namespace WildsCoop.UI
 {
-    public class CoopMainMenu : MonoBehaviour
+    public static class CoopMainMenu
     {
         /// <summary>
         /// Set or Get if the host join windows are visible
         /// </summary>
-        public bool HostJoinVisible { get; set; }
+        public static bool HostJoinVisible { get; set; }
         /// <summary>
         /// Set or Get if the error message window is visible, please only use <see cref="SetShowErrorMessage(string)"/> to show an error message
         /// </summary>
-        public bool ErrorMessageVisible { get; set; }
+        public static bool ErrorMessageVisible { get; set; }
 
-        private string login_ip = "localhost";
-        private string login_password = string.Empty;
-        private string login_port = OWServer.PORT_DEFAULT.ToString();
-        private string login_username = string.Empty;
+        internal static string login_ip = "localhost";
+        internal static string login_password = string.Empty;
+        internal static string login_port = OWServer.PORT_DEFAULT.ToString();
+        internal static string login_username = string.Empty;
 
-        private string host_username = string.Empty;
-        private string host_password = string.Empty;
-        private string host_port = OWServer.PORT_DEFAULT.ToString();
+        internal static string host_username = string.Empty;
+        internal static string host_password = string.Empty;
+        internal static string host_port = OWServer.PORT_DEFAULT.ToString();
 
-        private string _error_message;
+        private static string _error_message;
 
-        public void OnGUI()
+        public static void FillWithPrefs()
+        {
+            host_username = CoopModPrefs.GetUsernamePref();
+            login_username = CoopModPrefs.GetUsernamePref();
+        }
+
+        public static void OnGUI()
         {
             if (HostJoinVisible)
             {
@@ -52,24 +59,7 @@ namespace WildsCoop.UI
 
                        if (GUI.Button(new Rect(5, 245, 495, 50), "Join") && !ErrorMessageVisible)
                        {
-                           int port = 0;
-                           if (int.TryParse(login_port, out port))
-                               WildsCoopMod.Instance.JoinServer(
-                                   login_ip, 
-                                   port, 
-                                   string.IsNullOrWhiteSpace(login_password) ? null : login_password,
-                                   login_username,
-                                   (client) => //On Success
-                                   {
-                                       //TODO: Add Join World, sync, etc....
-                                       HostJoinVisible = false;
-                                   }, 
-                                   (client, loginResult) => //On Fail
-                                   {
-                                       SetShowErrorMessage($"Login failed : {loginResult.Message}");
-                                   });
-                           else
-                               SetShowErrorMessage("Invalid port.");
+                           JoinServerAction();
                        }
                    }, "Join Game");
 
@@ -86,7 +76,16 @@ namespace WildsCoop.UI
                     {
                         int port = 0;
                         if (int.TryParse(host_port, out port))
+                        {
+                            // start the server and run join !
                             WildsCoopMod.Instance.StartNewServer(port, string.IsNullOrWhiteSpace(host_password) ? null : host_password);
+                            login_username = host_username;
+                            login_password = host_password;
+                            login_port = host_port;
+                            login_ip = "localhost";
+
+                            JoinServerAction();
+                        }
                         else
                             SetShowErrorMessage("Invalid port.");
 
@@ -111,10 +110,40 @@ namespace WildsCoop.UI
         /// Set visible an error message on the center of the screen with <see cref="GUI"/>
         /// </summary>
         /// <param name="message"></param>
-        public void SetShowErrorMessage(string message)
+        public static void SetShowErrorMessage(string message)
         {
             ErrorMessageVisible = true;
             _error_message = message;
+        }
+
+        public static void JoinServerAction()
+        {
+            int port = 0;
+            if (int.TryParse(login_port, out port))
+                WildsCoopMod.Instance.JoinServer(
+                    login_ip,
+                    port,
+                    string.IsNullOrWhiteSpace(login_password) ? null : login_password,
+                    login_username,
+                    (client) => //On Success
+                                   {
+                                       //TODO: Add Join World, sync, etc....
+
+                                       CoopModPrefs.SetUsernamePref(login_username);
+
+                        GameSync.Client = client;
+                        if (!WildsCoopMod.Instance.TitleMenu.ResumeGame())
+                            WildsCoopMod.Instance.TitleMenu.NewGame();
+
+
+                        HostJoinVisible = false;
+                    },
+                    (client, loginResult) => //On Fail
+                                   {
+                        SetShowErrorMessage($"Login failed : {loginResult.Message}");
+                    });
+            else
+                SetShowErrorMessage("Invalid port.");
         }
     }
 }

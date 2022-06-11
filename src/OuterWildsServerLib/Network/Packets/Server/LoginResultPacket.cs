@@ -1,4 +1,5 @@
 ﻿using Lidgren.Network;
+using OuterWildsServerLib.Network.Packets.Server;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,7 +13,7 @@ namespace OuterWildsServer.Network.Packets.Server
         public bool IsLoggedIn { get; set; }
         public string Message { get; internal set; }
         public Guid UserId { get; set; }
-        public string Username{ get; set; }
+        public string Username { get; set; }
 
         public void Deserialize(NetOutgoingMessage netOutgoingMessage)
         {

@@ -268,5 +268,12 @@ namespace WildsCoop.Network
                 sb.AppendLine($"{item.Key}: {item.Value.FullName}");
             ClientLog(sb.ToString());
         }
+
+        public void RequestSync()
+        {
+            
+        }
+
+        public string GetUsername() => _username;
     }
 }

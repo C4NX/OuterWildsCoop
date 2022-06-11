@@ -332,10 +332,14 @@
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="CoopModPrefs.cs" />
+    <Compile Include="GameSync.cs" />
     <Compile Include="Network\OWClient.cs" />
+    <Compile Include="Patchs\PlayerBodyAwake.cs" />
     <Compile Include="UI\CoopMainMenu.cs" />
     <Compile Include="Patchs\FadeInMenuOptions.cs" />
     <Compile Include="OWUtilities.cs" />
+    <Compile Include="UI\TitleMenu.cs" />
     <Compile Include="Utils\MelonLogWriter.cs" />
     <Compile Include="WildsCoopMod.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
