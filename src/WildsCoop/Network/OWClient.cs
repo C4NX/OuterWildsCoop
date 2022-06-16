@@ -7,11 +7,12 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using OuterWildsServer.Network.Packets.Client;
-using OuterWildsServer.Network.Packets.Server;
 using OuterWildsServer.Network;
 using System.Collections;
 using System.IO;
+using OuterWildsServerLib.Network.Packets;
+using OuterWildsServerLib.Network.Packets.Client;
+using OuterWildsServerLib.Network.Packets.Server;
 
 namespace WildsCoop.Network
 {
@@ -35,7 +36,7 @@ namespace WildsCoop.Network
 
         private NetClient _client;
         private NetConnection _serverConnection;
-        private NetPacketsProvider _packetProvider;
+        private NetPacketProvider _packetProvider;
         private DateTime _lastMessageTime;
         private ServerInformationPacket _serverInformation;
         private bool _isLoggedIn;
@@ -115,15 +116,9 @@ namespace WildsCoop.Network
                 return true;
 
             _client = new NetClient(new NetPeerConfiguration(OWServer.LIDGREN_APP_IDENTIFIER));
-            _packetProvider = new NetPacketsProvider(_client)
-                //Add Client/Side Packets
-                .AddPacket<ServerInformationRequestPacket>(1)
-                .AddPacket<LoginRequestPacket>(2)
-                //Add Server/Side Packets
-                .AddPacket<ServerInformationPacket>(101)
-                .AddPacket<LoginResultPacket>(102);
 
-            LogPacketProvider(_packetProvider);
+            _packetProvider = new NetPacketProvider(_client);
+            _packetProvider.AddPackets(typeof(OWServer).Assembly);
 
             _client.Start();
             _serverConnection = _client.Connect(ipOrHost, port);
@@ -157,16 +152,21 @@ namespace WildsCoop.Network
         /// <returns></returns>
         public bool RequestServerInformation(bool requestDisconnectAfter,string clientVersion = OWServer.SERVER_VERSION)
         {
-            return _serverConnection.SendMessage(_packetProvider.Deserialize(new ServerInformationRequestPacket{ ClientVersion = clientVersion, WantToDisconnectAfter=requestDisconnectAfter }), NetDeliveryMethod.ReliableSequenced, 0) == NetSendResult.Sent;
+            return _serverConnection.SendMessage(_packetProvider.Serialize(new ServerInformationRequestPacket{ ClientVersion = clientVersion, WantToDisconnectAfter=requestDisconnectAfter }), NetDeliveryMethod.ReliableSequenced, 0) == NetSendResult.Sent;
         }
 
         public bool RequestLogin(string username, string password = "", string clientVersion = OWServer.SERVER_VERSION)
         {
-            return _serverConnection.SendMessage(_packetProvider.Deserialize(new LoginRequestPacket { ClientVersion= clientVersion, GameVersion=UnityEngine.Application.version, Password=password, Username=username}), NetDeliveryMethod.ReliableSequenced, 0) == NetSendResult.Sent;
+            return _serverConnection.SendMessage(_packetProvider.Serialize(new LoginRequestPacket { ClientVersion= clientVersion, GameVersion=UnityEngine.Application.version, Password=password, Username=username}), NetDeliveryMethod.ReliableSequenced, 0) == NetSendResult.Sent;
+        }
+
+        public bool RequestFirstSync()
+        {
+            return _serverConnection.SendMessage(_packetProvider.Serialize(new FirstSyncRequest()), NetDeliveryMethod.ReliableOrdered, 0) == NetSendResult.Sent;
         }
 
         /// <summary>
-        /// Transform the received data into a readable message with <see cref="NetPacketsProvider"/>, and execute the action associated to this message.
+        /// Transform the received data into a readable message with <see cref="NetPacketProvider"/>, and execute the action associated to this message.
         /// </summary>
         /// <param name="netIncomingMessage">Data</param>
         internal void PushDataMessage(NetIncomingMessage netIncomingMessage)
@@ -174,7 +174,7 @@ namespace WildsCoop.Network
             ClientLog($"Data received {netIncomingMessage.LengthBytes}B from the server");
 
             uint packetId = 0;
-            var packetReceived = _packetProvider.Serialize(netIncomingMessage, out packetId);
+            var packetReceived = _packetProvider.Deserialize(netIncomingMessage, out packetId);
 
             ClientLog($"Packet is {packetReceived.GetType().FullName} ({packetId})");
 
@@ -202,6 +202,14 @@ namespace WildsCoop.Network
                     OnConnectFail?.Invoke(this, loginResult);
                 }
                 ClientLog($"{_serverInformation} IP={_serverConnection.RemoteEndPoint}");
+            }
+
+            if (packetReceived is FirstSyncResultPacket)
+            {
+                var firstSyncPacket = (FirstSyncResultPacket)packetReceived;
+
+                ClientLog($"SYNC PACKET !");
+                ClientLog($"\n\nServer OwTime: {firstSyncPacket.time}\nPlayers: {string.Join(", ", firstSyncPacket.players.Select(m=>m.PlayerData.Username).ToArray())}");
             }
         }
 
@@ -254,24 +262,9 @@ namespace WildsCoop.Network
         /// for logging due to the following <see cref="MelonDebug"/> not working in a different thread.
         /// </summary>
         /// <param name="message"></param>
-        private static void ClientLog(string message)
+        internal static void ClientLog(string message)
         {
             MelonLogger.Log($"[CLIENT/{Thread.CurrentThread.Name ?? Thread.CurrentThread.ManagedThreadId.ToString()}] {message}");
-        }
-
-        private static void LogPacketProvider(NetPacketsProvider packetsProvider)
-        {
-            StringBuilder sb = new StringBuilder();
-            sb.AppendLine();
-            sb.AppendLine("This Client Provider has :");
-            foreach (var item in packetsProvider)
-                sb.AppendLine($"{item.Key}: {item.Value.FullName}");
-            ClientLog(sb.ToString());
-        }
-
-        public void RequestSync()
-        {
-            
         }
 
         public string GetUsername() => _username;

@@ -1,11 +1,12 @@
 ﻿using Lidgren.Network;
+using OuterWildsServerLib.Network.Packets;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace OuterWildsServer.Network.Packets.Server
+namespace OuterWildsServerLib.Network.Packets.Server
 {
     /// <summary>
     /// Used to give to the client information from the server, must be issued from a <see cref="Client.ServerInformationRequestPacket"/>
@@ -30,14 +31,14 @@ namespace OuterWildsServer.Network.Packets.Server
         public string MOTD { get; set; }
         public bool IsDisconnectRequest { get; set; }
 
-        public void Deserialize(NetOutgoingMessage netOutgoingMessage)
+        public void Serialize(NetOutgoingMessage netOutgoingMessage)
         {
             netOutgoingMessage.Write(IsDisconnectRequest);
             netOutgoingMessage.Write(GameVersion);
             netOutgoingMessage.Write(MOTD);
         }
 
-        public void Serialize(NetIncomingMessage incomingMessage)
+        public void Deserialize(NetIncomingMessage incomingMessage)
         {
             IsDisconnectRequest = incomingMessage.ReadBoolean();
             GameVersion = incomingMessage.ReadString();

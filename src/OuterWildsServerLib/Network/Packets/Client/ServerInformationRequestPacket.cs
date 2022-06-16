@@ -1,11 +1,12 @@
 ﻿using Lidgren.Network;
+using OuterWildsServerLib.Network.Packets;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace OuterWildsServer.Network.Packets.Client
+namespace OuterWildsServerLib.Network.Packets.Client
 {
     /// <summary>
     /// Used to ask the server for this information, must send back a <see cref="Server.ServerInformationPacket"/>
@@ -25,13 +26,13 @@ namespace OuterWildsServer.Network.Packets.Client
         public string ClientVersion { get; set; }
         public bool WantToDisconnectAfter { get; set; }
 
-        public void Deserialize(NetOutgoingMessage netOutgoingMessage)
+        public void Serialize(NetOutgoingMessage netOutgoingMessage)
         {
             netOutgoingMessage.Write(ClientVersion);
             netOutgoingMessage.Write(WantToDisconnectAfter);
         }
 
-        public void Serialize(NetIncomingMessage incomingMessage)
+        public void Deserialize(NetIncomingMessage incomingMessage)
         {
             ClientVersion = incomingMessage.ReadString();
             WantToDisconnectAfter = incomingMessage.ReadBoolean();

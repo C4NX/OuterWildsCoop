@@ -5,12 +5,14 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using OuterWildsServer.Network.Packets.Client;
-using OuterWildsServer.Network.Packets.Server;
-using OuterWildsServer.Network.Players;
+using OuterWildsServerLib.Network.Players;
 using OuterWildsServerLib.Utils;
 using OuterWildsServerLib.Utils.Logger;
 using System.IO;
+using OuterWildsServerLib.Network.Packets;
+using OuterWildsServerLib.Network.Packets.Client;
+using OuterWildsServerLib.Network.Packets.Server;
+using OuterWildsServerLib.Network;
 
 namespace OuterWildsServer.Network
 {
@@ -25,10 +27,12 @@ namespace OuterWildsServer.Network
         public const string GAME_VERSION = "1.1.10.47";
 
         private NetServer _server;
-        private List<OwPlayer> _players;
-        private NetPacketsProvider _packetProvider;
+        private List<OWPlayer> _players;
+        private NetPacketProvider _packetProvider;
         private ServerConfiguration _configuration;
         private DateTime _lastMessageTime;
+
+        private IOwTime _timeManager;
 
         /// <summary>
         /// Get if this server is loaded in Outer Wilds directly.
@@ -51,15 +55,11 @@ namespace OuterWildsServer.Network
         {
             _configuration = configuration;
             _server = new NetServer(_configuration.CreatePeerConfiguration());
-            _packetProvider = new NetPacketsProvider(_server)
-                //Add Client/Side Packets
-                .AddPacket<ServerInformationRequestPacket>(1)
-                .AddPacket<LoginRequestPacket>(2)
-                //Add Server/Side Packets
-                .AddPacket<ServerInformationPacket>(101)
-                .AddPacket<LoginResultPacket>(102);
+            _packetProvider = new NetPacketProvider(_server);
+            _packetProvider.AddPackets(typeof(OWServer).Assembly);
 
-            _players = new List<OwPlayer>();
+            _players = new List<OWPlayer>();
+            _players.Add(OWPlayer.CreateFake(Guid.NewGuid(), "Luz"));
         }
 
         /// <summary>
@@ -99,7 +99,7 @@ namespace OuterWildsServer.Network
         }
 
         /// <summary>
-        /// Transform the received data into a readable message with <see cref="NetPacketsProvider"/>, and execute the action associated to this message.
+        /// Transform the received data into a readable message with <see cref="NetPacketProvider"/>, and execute the action associated to this message.
         /// </summary>
         /// <param name="netIncomingMessage">Data</param>
         internal void PushDataMessage(NetIncomingMessage netIncomingMessage)
@@ -107,7 +107,7 @@ namespace OuterWildsServer.Network
             ServerLog($"Received {netIncomingMessage.LengthBytes}B from {netIncomingMessage.SenderEndPoint}", true);
 
             uint packetId = 0;
-            var packetReceived = _packetProvider.Serialize(netIncomingMessage, out packetId);
+            var packetReceived = _packetProvider.Deserialize(netIncomingMessage, out packetId);
 
             if (packetReceived != null)
             {
@@ -149,11 +149,17 @@ namespace OuterWildsServer.Network
                     if (isLoggedIn)
                     {
                         //Create the new player and add it.
-                        var newPlayer = new OwPlayer(Guid.NewGuid(), netIncomingMessage.SenderConnection, loginPacket.Username.Trim());
+                        var newPlayer = new OWPlayer(Guid.NewGuid(), netIncomingMessage.SenderConnection, loginPacket.Username.Trim());
                         _players.Add(newPlayer);
 
 
                         ServerLog($"New Player as joined {newPlayer.GetUsername()}({newPlayer.GetGuid()})", false);
+
+                        if (_timeManager == null)
+                        {
+                            _timeManager = new ServerTimeManager();
+                            ServerLog($"Created OwTime: {_timeManager.GetTime()}s --> {_timeManager.GetTime()}s");
+                        }
 
                         //Send OK, with id,username,message.
                         ServerSend(netIncomingMessage.SenderConnection, new LoginResultPacket
@@ -176,6 +182,18 @@ namespace OuterWildsServer.Network
 
                     return;
                 }
+
+                if (packetReceived is FirstSyncRequest)
+                {
+                    var player = GetPlayerFromMessage(netIncomingMessage);
+
+                    if (player != null)
+                    {
+                        var fsyncPacket = new FirstSyncResultPacket(this, player);
+                        fsyncPacket.time = _timeManager.GetTime();
+                        ServerLog($"Sent FirstSyncResultPacket, {ServerSend(player, fsyncPacket)}");
+                    }
+                }
             }
             else
             {
@@ -194,7 +212,7 @@ namespace OuterWildsServer.Network
 
             if(netIncomingMessage.SenderConnection?.Status == NetConnectionStatus.Disconnected)
             {
-                OwPlayer player = null;
+                OWPlayer player = null;
                 foreach (var item in GetPlayers())
                 {
                     if(item.GetConnection() == netIncomingMessage.SenderConnection)
@@ -213,26 +231,41 @@ namespace OuterWildsServer.Network
 
         #region Sends
 
+        public OWPlayer GetPlayerFromMessage(NetIncomingMessage message)
+        {
+            foreach (var item in GetPlayers())
+            {
+                if (item.GetConnection() == message.SenderConnection)
+                {
+                    return item;
+                }
+            }
+            return null;
+        }
+
         /// <summary>
         /// Send a <see cref="INetPacket"/> to a <see cref="NetConnection"/>.
         /// </summary>
         /// <param name="netConnection">The <see cref="NetConnection"/></param>
         /// <param name="netPacket">The <see cref="INetPacket"/></param>
-        /// <exception cref="ArgumentException">If this packet is not registered in the <see cref="NetPacketsProvider"/></exception>
+        /// <exception cref="ArgumentException">If this packet is not registered in the <see cref="NetPacketProvider"/></exception>
         /// <returns>If the message was <see cref="NetSendResult.Sent"/> or <see cref="NetSendResult.Queued"/></returns>
         public bool ServerSend(NetConnection netConnection, INetPacket netPacket)
         {
-            var sendResult = netConnection.SendMessage(_packetProvider.Deserialize(netPacket), NetDeliveryMethod.ReliableOrdered, 0);
+            if (netConnection == null)
+                return false;
+
+            var sendResult = netConnection.SendMessage(_packetProvider.Serialize(netPacket), NetDeliveryMethod.ReliableOrdered, 0);
             return sendResult == NetSendResult.Sent || sendResult == NetSendResult.Queued;
         }
 
         /// <summary>
-        /// Send a <see cref="INetPacket"/> to a <see cref="OwPlayer"/>
+        /// Send a <see cref="INetPacket"/> to a <see cref="OWPlayer"/>
         /// </summary>
         /// <param name="player"></param>
         /// <param name="netPacket"></param>
         /// <returns></returns>
-        public bool ServerSend(OwPlayer player, INetPacket netPacket)
+        public bool ServerSend(OWPlayer player, INetPacket netPacket)
             => ServerSend(player.GetConnection(), netPacket);
 
         /// <summary>
@@ -241,9 +274,9 @@ namespace OuterWildsServer.Network
         /// <param name="netPacket">The packet to send</param>
         public void ServerBroadcast(INetPacket netPacket)
         {
-            var outMessage = _packetProvider.Deserialize(netPacket);
+            var outMessage = _packetProvider.Serialize(netPacket);
             foreach (var item in GetPlayers())
-                item.GetConnection().SendMessage(outMessage, NetDeliveryMethod.ReliableOrdered, 0);
+                item.GetConnection()?.SendMessage(outMessage, NetDeliveryMethod.ReliableOrdered, 0);
         }
 
         /// <summary>
@@ -251,13 +284,13 @@ namespace OuterWildsServer.Network
         /// </summary>
         /// <param name="netPacket">The packet to send</param>
         /// <param name="ignores">Players who are ignored</param>
-        public void ServerBroadcast(INetPacket netPacket, OwPlayer[] ignores)
+        public void ServerBroadcast(INetPacket netPacket, OWPlayer[] ignores)
         {
-            var outMessage = _packetProvider.Deserialize(netPacket);
+            var outMessage = _packetProvider.Serialize(netPacket);
             foreach (var item in GetPlayers())
                 if (!ignores.Contains(item))
                 {
-                    item.GetConnection().SendMessage(outMessage, NetDeliveryMethod.ReliableOrdered, 0);
+                    item.GetConnection()?.SendMessage(outMessage, NetDeliveryMethod.ReliableOrdered, 0);
                 }
         }
 
@@ -300,7 +333,7 @@ namespace OuterWildsServer.Network
         /// <returns>The current password</returns>
         public string GetPassword() => _configuration.Password;
 
-        public IReadOnlyCollection<OwPlayer> GetPlayers() => _players.AsReadOnly();
+        public IReadOnlyCollection<OWPlayer> GetPlayers() => _players.AsReadOnly();
 
         /// <summary>
         /// Method that is executed on the <see cref="ThreadPool"/>, and which serves as a message reading loop for the server.

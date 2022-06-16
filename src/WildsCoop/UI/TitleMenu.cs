@@ -24,6 +24,7 @@ namespace WildsCoop.UI
         {
             var resumeAction = (SubmitActionLoadScene)AccessTools.Field(typeof(TitleScreenManager), "_resumeGameAction").GetValue(titleScreenManager);
             resumeAction?.Submit();
+            //TODO: Check that !
             return resumeAction != null;
         }
 

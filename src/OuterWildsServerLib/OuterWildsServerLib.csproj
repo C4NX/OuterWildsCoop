@@ -47,15 +47,21 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Network\IOwTime.cs" />
     <Compile Include="Network\LidgrenUtils.cs" />
-    <Compile Include="Network\NetPacketsProvider.cs" />
+    <Compile Include="Network\Packets\NetPacketProvider.cs" />
     <Compile Include="Network\OWServer.cs" />
+    <Compile Include="Network\Packets\Client\FirstSyncRequest.cs" />
     <Compile Include="Network\Packets\Client\LoginRequestPacket.cs" />
     <Compile Include="Network\Packets\Client\ServerInformationRequestPacket.cs" />
+    <Compile Include="Network\Packets\NetPacketIdAttribute.cs" />
+    <Compile Include="Network\Packets\NetSerializationException.cs" />
     <Compile Include="Network\Packets\Server\LoginResultPacket.cs" />
     <Compile Include="Network\Packets\Server\ServerInformationPacket.cs" />
-    <Compile Include="Network\Packets\Server\SyncResultPacket.cs" />
-    <Compile Include="Network\Players\OwPlayer.cs" />
+    <Compile Include="Network\Packets\Server\FirstSyncResultPacket.cs" />
+    <Compile Include="Network\Players\IPlayerData.cs" />
+    <Compile Include="Network\Players\OWPlayer.cs" />
+    <Compile Include="Network\Players\PlayerDataFields.cs" />
     <Compile Include="Network\ServerConfiguration.cs" />
     <Compile Include="ProgramMain.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -64,6 +70,8 @@
     <Compile Include="Utils\Logger\ILogWriter.cs" />
     <Compile Include="Utils\Logger\LogLevel.cs" />
     <Compile Include="Utils\Logger\ServerLogger.cs" />
+    <Compile Include="Utils\ServerTimeManager.cs" />
+    <Compile Include="Utils\Vector3.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

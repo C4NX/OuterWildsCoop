@@ -1,7 +1,7 @@
 ﻿using HarmonyLib;
 using MelonLoader;
 using OuterWildsServer.Network;
-using OuterWildsServer.Network.Packets.Server;
+using OuterWildsServerLib.Network.Packets.Server;
 using OuterWildsServerLib.Utils.Logger;
 using System;
 using System.Collections.Generic;
@@ -41,7 +41,6 @@ namespace WildsCoop
             CoopModPrefs.InitialisePrefs();
 
             LoggerInstance.Msg("The unofficial multiplayer mod for OuterWilds is now active !");
-
             base.OnApplicationStart();
         }
 

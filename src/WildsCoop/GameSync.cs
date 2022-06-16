@@ -17,7 +17,8 @@ namespace WildsCoop
             {
                 //TODO: Say to the server to send the info of the current game !
                 MelonLoader.MelonDebug.Msg("Sync request sent !");
-                Client.RequestSync();
+
+                Client.RequestFirstSync();
             }
         }
     }
